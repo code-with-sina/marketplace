@@ -96,5 +96,21 @@ class TransactionHookController extends Controller
     {
 
     }
+
+
+    public function BuyerRequestDebitFailed() 
+    {
+
+    }
+
+    public function BuyerRequestDebitInitiated() 
+    {
+
+    }
+
+    public function BuyerRequestDebitSuccessful() 
+    {
+
+    }
   
 }
