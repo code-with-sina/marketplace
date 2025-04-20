@@ -170,4 +170,9 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasOne(TempKyc::class);
     }
+
+    public function transactionevent(): HasMany
+    {
+        return $this->hasMany(TransactionEvent::class);
+    }
 }

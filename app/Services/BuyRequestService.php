@@ -18,6 +18,8 @@ use App\Jobs\TradeRequestNotificationJob;
 use App\Jobs\AutoCancelTradeRequest;
 use Illuminate\Support\Facades\Log;
 
+use App\Http\Controllers\TransactionHookController;
+
 use App\Services\BalanceService;
 
 class BuyRequestService
@@ -130,8 +132,10 @@ class BuyRequestService
             return $this;
         }
 
+        $initReceipt = app(TransactionHookController::class);
         $debitAmount = ((float)$this->data->offer_rate * (float)$this->data->amount);
         $this->reference = Str::uuid();
+        $initReceipt->initBuyerRequestDebit(uuid: auth()->user()->uuid, reference: $this->reference);
         $this->debit = app(DebitService::class)
             ->getAmount(amount: $debitAmount, ref: $this->reference, uuid: auth()->user()->uuid)
             ->getInitialBalance()
@@ -141,7 +145,7 @@ class BuyRequestService
             ->throwState();
 
         if ($this->debit->status !== 200) {
-            $this->setErrorState(status: $debit->status, message: $debit->title);
+            $this->setErrorState(status: $this->debit->status, message: $this->debit->title);
             return $this;
         }
 

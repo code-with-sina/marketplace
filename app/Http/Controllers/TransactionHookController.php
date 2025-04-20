@@ -112,5 +112,16 @@ class TransactionHookController extends Controller
     {
 
     }
+
+    public function initBuyerRequestDebit($uuid, $reference) 
+    {
+        $user = User::where('uuid', $uuid)->first();
+        $user->transactionevent()->create([
+            'type' => 'BuyerRequest',
+            'reference' => $reference,
+            'status' => 'initiated',
+        ]);
+        
+    }
   
 }
