@@ -9,6 +9,7 @@ use App\Models\TradeRequest;
 use App\Services\DebitService;
 use App\TradeFacades\HasCreatePeerToPeer;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Controllers\TransactionHookController;
 use App\Services\BalanceService;
 use Illuminate\Support\Facades\Log;
 
@@ -20,6 +21,7 @@ class BuyApprovalService
     private $fail;
     private $trade;
     private $data;
+    private $debitTrack;
     private $success;
     private $charge;
     private $amount;
@@ -126,16 +128,18 @@ class BuyApprovalService
             return $this;
         }
 
+        $initReceipt = app(TransactionHookController::class);
+        $initReceipt->initBuyerRequestDebit(uuid: auth()->user()->uuid, reference: $this->trade->fund_reg);
         $debitAmount = ((float) $this->trade->trade_rate * (float) $this->charge);
-        $this->debit = app(DebitService::class)
+        $this->debitTrack = app(DebitService::class)
             ->getAmount(amount: $debitAmount, ref: $this->trade->fund_reg, uuid: auth()->user()->uuid)
             ->getInitialBalance()
             ->compareBalance()
             ->processTransaction()
             ->createJournal()
             ->throwState();
-        if ($this->debit->status !== 200) {
-            $this->setFailedState(status: $this->debit->status, title: $this->debit->title);
+        if ($this->debitTrack->status !== 200) {
+            $this->setFailedState(status: $this->debitTrack->status, title: $this->debitTrack->title);
             return $this;
         }
         return $this;

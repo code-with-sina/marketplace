@@ -107,19 +107,6 @@ class WebhookController extends Controller
              ]);
             
          }
-
-        //  if($request->data['type'] === 'book.transfer.initiated') {
-        //      $transaction = TransactionEvent::where('reference',  $request->included[1]['attributes']['reference'])->where('status', 'initiated')->first();
-        //      $transaction->transactionevent()->update([
-        //          'status' => 'failed', 
-        //          'event_id' => $this->eventData['data']['id'],
-        //          'event_type' => $this->eventData['data']['type'],
-        //          'message'   => $this->eventData['data']['attributes']['failureEventData']['message'] ?? "null",
-        //          'payload'   => json_encode($this->eventData),
-        //          'event_time' => $this->eventData['data']['attributes']['createdAt']
-        //      ]);
-            
-        //  }
          
          if($request->data['type'] === 'book.transfer.successful') {
 
@@ -149,27 +136,6 @@ class WebhookController extends Controller
                 ->successState()
                 ->throwStatus();
             }
-
-            
-            
-            //  $transaction = TransactionEvent::where('reference',  $request->included[1]['attributes']['reference'])->where('status', 'initiated')->first();
-            //  $transaction->transactionevent()->update([
-            //      'status' => 'failed', 
-            //      'event_id' => $this->eventData['data']['id'],
-            //      'event_type' => $this->eventData['data']['type'],
-            //      'message'   => $this->eventData['data']['attributes']['failureEventData']['message'] ?? "null",
-            //      'payload'   => json_encode($this->eventData),
-            //      'event_time' => $this->eventData['data']['attributes']['createdAt']
-            //  ]);
-
-            //  app(PostBuyRequestService::class)
-            //      ->retreiveTempTradeData($transaction->reference)
-            //      ->createTradeRequest()
-            //      ->sendAdminNotification()
-            //      ->notifyRecipient()
-            //      ->autoCancelTradeRequest()
-            //      ->successState()
-            //      ->throwStatus();
             
          }
         return response()->json(['message' => 'Webhook processed successfully'], 200);

@@ -5,23 +5,17 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\PToP;
-use Illuminate\Support\Str;
 use App\Models\TradeRequest;
 use Illuminate\Http\Request;
-use App\Prop\FeeDeterminantAid;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Carbon;
-use App\Jobs\TradeRequestNotificationJob;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TradeController;
 use App\Services\BuyApprovalService;
 use App\Services\SellApprovalService;
-use App\Services\ChargeService;
 use App\Services\RejectTradeService;
 use App\Services\SellRequestService;
 use App\Services\BuyRequestService;
 use App\Services\CancelTradeService;
-use Illuminate\Support\Facades\Validator;
 use App\TradeFacades\HasCreatePeerToPeer;
 
 use Illuminate\Support\Facades\Log;
@@ -55,10 +49,6 @@ class InitiateRequestController extends Controller
             ->prepareCharge()
             ->debit()
             ->createTempTradeData()
-            // ->createTradeRequest()
-            // ->sendAdminNotification()
-            // ->notifyRecipient()
-            // ->autoCancelTradeRequest()
             ->successState()
             ->throwStatus();
 
