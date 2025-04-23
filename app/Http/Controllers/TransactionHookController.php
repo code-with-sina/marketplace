@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\CustomerStatus;
+use App\Models\TransactionEvent;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
+use App\Services\PostBuyRequestService;
 
 class TransactionHookController extends Controller
 {
@@ -13,22 +15,56 @@ class TransactionHookController extends Controller
     protected $eventData;
 
 
-    public function BuyerRequestDebit(Request $request)
+    public function handle(Request $request)
     {
+        Log::info(['approved' => $request]);
         $receipt = $this->decoupleHookReceipt($request);
-
+       
         if ($receipt) {
             if($request->data['type'] === 'book.transfer.failed') {
-                $users = CustomerStatus::where('customerId', $request->data['relationships']['customer']['data']['id'])->first();
-                $this->user = $users->user()->first();
+               $transaction = TransactionEvent::where('reference',  $request->included[1]['attributes']['reference'])->where('status', 'initiated')->first();
+               $transaction->transactionevent()->update([
+                    'status' => 'failed', 
+                    'event_id' => $this->eventData['data']['id'],
+                    'event_type' => $this->eventData['data']['type'],
+                    'message'   => $this->eventData['data']['attributes']['failureEventData']['message'] ?? "null",
+                    'payload'   => json_encode($this->eventData),
+                    'event_time' => $this->eventData['data']['attributes']['createdAt']
+                ]);
+               
             }elseif($request->data['type'] === 'book.transfer.initiated') {
-                $users = CustomerStatus::where('customerId', $request->data['relationships']['customer']['data']['id'])->first();
-                $this->user = $users->user()->first();
+                $transaction = TransactionEvent::where('reference',  $request->included[1]['attributes']['reference'])->where('status', 'initiated')->first();
+                $transaction->transactionevent()->update([
+                    'status' => 'failed', 
+                    'event_id' => $this->eventData['data']['id'],
+                    'event_type' => $this->eventData['data']['type'],
+                    'message'   => $this->eventData['data']['attributes']['failureEventData']['message'] ?? "null",
+                    'payload'   => json_encode($this->eventData),
+                    'event_time' => $this->eventData['data']['attributes']['createdAt']
+                ]);
+               
             }elseif($request->data['type'] === 'book.transfer.successful') {
-                $users = CustomerStatus::where('customerId', $request->data['relationships']['customer']['data']['id'])->first();
-                $this->user = $users->user()->first();
+                $transaction = TransactionEvent::where('reference',  $request->included[1]['attributes']['reference'])->where('status', 'initiated')->first();
+                $transaction->transactionevent()->update([
+                    'status' => 'failed', 
+                    'event_id' => $this->eventData['data']['id'],
+                    'event_type' => $this->eventData['data']['type'],
+                    'message'   => $this->eventData['data']['attributes']['failureEventData']['message'] ?? "null",
+                    'payload'   => json_encode($this->eventData),
+                    'event_time' => $this->eventData['data']['attributes']['createdAt']
+                ]);
+
+                app(PostBuyRequestService::class)
+                    ->retreiveTempTradeData($transaction->reference)
+                    ->createTradeRequest()
+                    ->sendAdminNotification()
+                    ->notifyRecipient()
+                    ->autoCancelTradeRequest()
+                    ->successState()
+                    ->throwStatus();
+               
             }
-            // $this->eventLogger(user: $this->user);
+
         } else {
             return response()->json(['error' => 'Invalid signature'], 403);
         }
@@ -77,6 +113,7 @@ class TransactionHookController extends Controller
     }
 
     public function decoupleHookReceipt($dataRoll) {
+        Log::info(['approved' => $dataRoll]);
         $this->eventData = $dataRoll->all();
         $homeSecret = config('app.webhook_secret');
         $getAnchorSignature = $dataRoll->header('x-anchor-signature');
@@ -122,6 +159,11 @@ class TransactionHookController extends Controller
             'status' => 'initiated',
         ]);
         
+    }
+
+    public function postBuyerRequestDebit($data) 
+    {
+
     }
   
 }

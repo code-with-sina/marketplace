@@ -5,10 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\CustomerStatus;
+use App\Models\TransactionEvent;
 use App\Models\WithdrawalJournal;
+use App\Services\WalletFeeService;
 use Illuminate\Support\Facades\Log;
 use App\Services\SubAccountService;
-use App\Services\WalletFeeService;
+use App\Models\TransactionalJournal;
+use App\Services\PostBuyRequestService;
 use App\Http\Controllers\MessengerController;
 
 class WebhookController extends Controller
@@ -19,6 +22,7 @@ class WebhookController extends Controller
 
     public function handle(Request $request)
     {
+        
         $this->eventData = $request->all();
         $homeSecret = config('app.webhook_secret');
         $getAnchorSignature = $request->header('x-anchor-signature');
@@ -86,6 +90,88 @@ class WebhookController extends Controller
             ]);
             $this->eventLogger(user: $withdrawal->user);
         }
+
+
+
+
+
+        if($request->data['type'] === 'book.transfer.failed') {
+            $transaction = TransactionEvent::where('reference',  $request->included[1]['attributes']['reference'])->where('status', 'initiated')->first();
+            $transaction->transactionevent()->update([
+                 'status' => 'failed', 
+                 'event_id' => $this->eventData['data']['id'],
+                 'event_type' => $this->eventData['data']['type'],
+                 'message'   => $this->eventData['data']['attributes']['failureEventData']['message'] ?? "null",
+                 'payload'   => json_encode($this->eventData),
+                 'event_time' => $this->eventData['data']['attributes']['createdAt']
+             ]);
+            
+         }
+
+        //  if($request->data['type'] === 'book.transfer.initiated') {
+        //      $transaction = TransactionEvent::where('reference',  $request->included[1]['attributes']['reference'])->where('status', 'initiated')->first();
+        //      $transaction->transactionevent()->update([
+        //          'status' => 'failed', 
+        //          'event_id' => $this->eventData['data']['id'],
+        //          'event_type' => $this->eventData['data']['type'],
+        //          'message'   => $this->eventData['data']['attributes']['failureEventData']['message'] ?? "null",
+        //          'payload'   => json_encode($this->eventData),
+        //          'event_time' => $this->eventData['data']['attributes']['createdAt']
+        //      ]);
+            
+        //  }
+         
+         if($request->data['type'] === 'book.transfer.successful') {
+
+            $payload = json_decode($request->getContent(), true);
+            $transfer = collect($payload['included'])->firstWhere('type', 'BOOK_TRANSFER');
+            $reference = $transfer['attributes']['reference'];
+            $journal = TransactionalJournal::where('api_reference',  $reference)->first();
+            $transaction = TransactionEvent::where('reference',  $journal->source_reference)->where('status', 'initiated')->first();
+            if ($transaction) {
+                TransactionEvent::where('reference',  $journal->source_reference)->update([
+                    'status' => 'successful',
+                    'event_id' => $payload['data']['id'],
+                    'event_type' => $payload['data']['type'],
+                    'message' => $payload['data']['attributes']['failureEventData']['message'] ?? "null",
+                    'payload' => json_encode($payload),
+                    'event_time' => $payload['data']['attributes']['createdAt']
+                ]);
+
+                app(PostBuyRequestService::class)
+                ->retreiveTempTradeData($journal->source_reference)
+                ->DeterminantToolKit()
+                ->prepareCharge()
+                ->createTradeRequest()
+                ->sendAdminNotification()
+                ->notifyRecipient()
+                ->autoCancelTradeRequest()
+                ->successState()
+                ->throwStatus();
+            }
+
+            
+            
+            //  $transaction = TransactionEvent::where('reference',  $request->included[1]['attributes']['reference'])->where('status', 'initiated')->first();
+            //  $transaction->transactionevent()->update([
+            //      'status' => 'failed', 
+            //      'event_id' => $this->eventData['data']['id'],
+            //      'event_type' => $this->eventData['data']['type'],
+            //      'message'   => $this->eventData['data']['attributes']['failureEventData']['message'] ?? "null",
+            //      'payload'   => json_encode($this->eventData),
+            //      'event_time' => $this->eventData['data']['attributes']['createdAt']
+            //  ]);
+
+            //  app(PostBuyRequestService::class)
+            //      ->retreiveTempTradeData($transaction->reference)
+            //      ->createTradeRequest()
+            //      ->sendAdminNotification()
+            //      ->notifyRecipient()
+            //      ->autoCancelTradeRequest()
+            //      ->successState()
+            //      ->throwStatus();
+            
+         }
         return response()->json(['message' => 'Webhook processed successfully'], 200);
     }
 

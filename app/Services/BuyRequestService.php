@@ -19,7 +19,7 @@ use App\Jobs\AutoCancelTradeRequest;
 use Illuminate\Support\Facades\Log;
 
 use App\Http\Controllers\TransactionHookController;
-
+use App\Models\TempTradeData;
 use App\Services\BalanceService;
 
 class BuyRequestService
@@ -152,16 +152,15 @@ class BuyRequestService
         return $this;
     }
 
-    public function createTradeRequest()
+    public function createTempTradeData()
     {
         if ($this->errorState) {
             return $this;
         }
 
-
         try {
 
-            $this->trade = TradeRequest::create([
+            TempTradeData::create([
                 'wallet_name'       => $this->data->wallet_name,
                 'wallet_id'         => $this->data->wallet_id,
                 'item_for'          => $this->data->item_for,
@@ -184,15 +183,6 @@ class BuyRequestService
                 'status'            => self::STATUS
             ]);
 
-            $this->trade->charge()->create([
-                'product'   => $this->charge['product'],
-                'offer'   => $this->charge['offer'],
-                'owner'   => $this->charge['owner'],
-                'uuid'   => $this->charge['uuid'],
-                'fee'   => $this->charge['prepared invoice']['fee'],
-                'total'   => $this->charge['prepared invoice']['total'],
-            ]);
-
             return $this;
         } catch (\Exception $e) {
             $this->setErrorState(status: 400, message: __("Sorry! We couldn't create a trade request at the moment. Please try again later." . $e->getMessage()));
@@ -202,53 +192,103 @@ class BuyRequestService
         return $this;
     }
 
-    public function sendAdminNotification()
-    {
-        if ($this->errorState) {
-            return $this;
-        }
+    // public function createTradeRequest()
+    // {
+    //     if ($this->errorState) {
+    //         return $this;
+    //     }
 
-        $staffing = Http::get('https://staffbased.ratefy.co/api/admin-staff');
-        $staffs = $staffing->object();
-        $groupStaff = [];
-        foreach ($staffs as $staff) {
-            $groupStaff[] = $staff->email;
-        }
-        $content = $this->createContent($this->trade);
-        $admin = app(AdminController::class);
-        $admin->staffsNotification(direction: $this->direction, content: $content, groupStaff: $groupStaff, uuid: $this->trade->owner,   id: $this->trade->id);
 
-        return $this;
-    }
-    public function notifyRecipient()
-    {
-        if ($this->errorState) {
-            return $this;
-        }
+    //     try {
 
-        $messenger = app(MessengerController::class);
-        $messenger->sendInitiatedTradeRequestNotification(
-            owner: $this->trade->owner,
-            recipient: $this->trade->recipient,
-            amount: (float)$this->trade->amount,
-            amountInNaira: ($this->trade->amount * $this->trade->trade_rate),
-            itemFor: $this->trade->item_for,
-            itemId: $this->trade->item_id,
-            walletName: $this->trade->wallet_name
-        );
+    //         $this->trade = TradeRequest::create([
+    //             'wallet_name'       => $this->data->wallet_name,
+    //             'wallet_id'         => $this->data->wallet_id,
+    //             'item_for'          => $this->data->item_for,
+    //             'item_id'           => $this->data->item_id,
+    //             'amount'            => $this->data->amount,
+    //             'trade_rate'        => $this->data->offer_rate,
+    //             'amount_to_receive' => $this->data->amount_to_receive,
+    //             'owner'             => auth()->user()->uuid,
+    //             'recipient'         => $this->data->recipient,
+    //             'duration'          => self::DURATION,
+    //             'start'             => Carbon::now(),
+    //             'end'               => Carbon::now()->addMinutes(30),
+    //             'notify_time'       => self::NOTIFY_TIME,
+    //             'fund_attached'     => self::FUND_ATTACHED,
+    //             'fund_reg'          => $this->reference,
+    //             'charges_for'       => $this->direction === "buyeroffer" ? "buyer" : "seller",
+    //             'ratefy_fee'        => $this->offerItem->ratefyfee  == null ? 'null' : $this->offerItem->ratefyfee,
+    //             'percentage'        => $this->offerItem->percentage  == null ? 'null' : $this->offerItem->percentage,
+    //             'trade_registry'    => Str::uuid(),
+    //             'status'            => self::STATUS
+    //         ]);
 
-        return $this;
-    }
+    //         $this->trade->charge()->create([
+    //             'product'   => $this->charge['product'],
+    //             'offer'   => $this->charge['offer'],
+    //             'owner'   => $this->charge['owner'],
+    //             'uuid'   => $this->charge['uuid'],
+    //             'fee'   => $this->charge['prepared invoice']['fee'],
+    //             'total'   => $this->charge['prepared invoice']['total'],
+    //         ]);
 
-    public function autoCancelTradeRequest()
-    {
-        if ($this->errorState)
-            return $this;
+    //         return $this;
+    //     } catch (\Exception $e) {
+    //         $this->setErrorState(status: 400, message: __("Sorry! We couldn't create a trade request at the moment. Please try again later." . $e->getMessage()));
+    //         return $this;
+    //     }
 
-        AutoCancelTradeRequest::dispatch($this->trade->id, $this->trade->owner)->delay(now()->addMinutes(30));
-        Log::info('I was here, auto cancel');
-        return $this;
-    }
+    //     return $this;
+    // }
+
+    // public function sendAdminNotification()
+    // {
+    //     if ($this->errorState) {
+    //         return $this;
+    //     }
+
+    //     $staffing = Http::get('https://staffbased.ratefy.co/api/admin-staff');
+    //     $staffs = $staffing->object();
+    //     $groupStaff = [];
+    //     foreach ($staffs as $staff) {
+    //         $groupStaff[] = $staff->email;
+    //     }
+    //     $content = $this->createContent($this->trade);
+    //     $admin = app(AdminController::class);
+    //     $admin->staffsNotification(direction: $this->direction, content: $content, groupStaff: $groupStaff, uuid: $this->trade->owner,   id: $this->trade->id);
+
+    //     return $this;
+    // }
+    // public function notifyRecipient()
+    // {
+    //     if ($this->errorState) {
+    //         return $this;
+    //     }
+
+    //     $messenger = app(MessengerController::class);
+    //     $messenger->sendInitiatedTradeRequestNotification(
+    //         owner: $this->trade->owner,
+    //         recipient: $this->trade->recipient,
+    //         amount: (float)$this->trade->amount,
+    //         amountInNaira: ($this->trade->amount * $this->trade->trade_rate),
+    //         itemFor: $this->trade->item_for,
+    //         itemId: $this->trade->item_id,
+    //         walletName: $this->trade->wallet_name
+    //     );
+
+    //     return $this;
+    // }
+
+    // public function autoCancelTradeRequest()
+    // {
+    //     if ($this->errorState)
+    //         return $this;
+
+    //     AutoCancelTradeRequest::dispatch($this->trade->id, $this->trade->owner)->delay(now()->addMinutes(30));
+    //     Log::info('I was here, auto cancel');
+    //     return $this;
+    // }
 
     public function successState()
     {
@@ -278,7 +318,7 @@ class BuyRequestService
             "status"    => $status,
             "message"   => $message,
             "state"     => $this->debit,
-            "response"  => $this->trade
+            // "response"  => $this->trade
         ];
 
         return $this;
