@@ -13,6 +13,7 @@ use App\Services\SubAccountService;
 use App\Models\TransactionalJournal;
 use App\Services\PostBuyRequestService;
 use App\Http\Controllers\MessengerController;
+use App\Services\PostBuyApprovalService;
 
 class WebhookController extends Controller
 {
@@ -115,7 +116,7 @@ class WebhookController extends Controller
             $reference = $transfer['attributes']['reference'];
             $journal = TransactionalJournal::where('api_reference',  $reference)->first();
             $transaction = TransactionEvent::where('reference',  $journal->source_reference)->where('status', 'initiated')->first();
-            if ($transaction) {
+            if ($transaction->type == "BuyerRequest") {
                 TransactionEvent::where('reference',  $journal->source_reference)->update([
                     'status' => 'successful',
                     'event_id' => $payload['data']['id'],
@@ -136,6 +137,65 @@ class WebhookController extends Controller
                 ->successState()
                 ->throwStatus();
             }
+
+            if ($transaction->type == "BuyerApproval") {
+                TransactionEvent::where('reference',  $journal->source_reference)->update([
+                    'status' => 'successful',
+                    'event_id' => $payload['data']['id'],
+                    'event_type' => $payload['data']['type'],
+                    'message' => $payload['data']['attributes']['failureEventData']['message'] ?? "null",
+                    'payload' => json_encode($payload),
+                    'event_time' => $payload['data']['attributes']['createdAt']
+                ]);
+
+                app(PostBuyApprovalService::class)
+                ->processPeerToPeer($journal->source_reference)
+                ->throwStatus();
+            }
+
+            // if ($transaction->type == "PeerPaymentFee") {
+            //     TransactionEvent::where('reference',  $journal->source_reference)->update([
+            //         'status' => 'successful',
+            //         'event_id' => $payload['data']['id'],
+            //         'event_type' => $payload['data']['type'],
+            //         'message' => $payload['data']['attributes']['failureEventData']['message'] ?? "null",
+            //         'payload' => json_encode($payload),
+            //         'event_time' => $payload['data']['attributes']['createdAt']
+            //     ]);
+
+            //     app(PostBuyRequestService::class)
+            //     ->retreiveTempTradeData($journal->source_reference)
+            //     ->DeterminantToolKit()
+            //     ->prepareCharge()
+            //     ->createTradeRequest()
+            //     ->sendAdminNotification()
+            //     ->notifyRecipient()
+            //     ->autoCancelTradeRequest()
+            //     ->successState()
+            //     ->throwStatus();
+            // }
+
+            // if ($transaction->type == "Disbursement") {
+            //     TransactionEvent::where('reference',  $journal->source_reference)->update([
+            //         'status' => 'successful',
+            //         'event_id' => $payload['data']['id'],
+            //         'event_type' => $payload['data']['type'],
+            //         'message' => $payload['data']['attributes']['failureEventData']['message'] ?? "null",
+            //         'payload' => json_encode($payload),
+            //         'event_time' => $payload['data']['attributes']['createdAt']
+            //     ]);
+
+            //     app(PostBuyRequestService::class)
+            //     ->retreiveTempTradeData($journal->source_reference)
+            //     ->DeterminantToolKit()
+            //     ->prepareCharge()
+            //     ->createTradeRequest()
+            //     ->sendAdminNotification()
+            //     ->notifyRecipient()
+            //     ->autoCancelTradeRequest()
+            //     ->successState()
+            //     ->throwStatus();
+            // }
             
          }
         return response()->json(['message' => 'Webhook processed successfully'], 200);

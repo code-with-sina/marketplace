@@ -14,8 +14,6 @@ class PostBuyApprovalService
 
     private $failstate = false;
     private $fail;
-    private $trade;
-    private $data;
     private $debitTrack;
     private $success;
     private $charge;
@@ -28,9 +26,9 @@ class PostBuyApprovalService
         'reportage' => 'good',
         'durationStatus' => 'started',
     ];
+  
 
-
-    public function processPeerToPeer()
+    public function processPeerToPeer($reference)
     {
         if ($this->failstate) {
             return $this;
@@ -39,8 +37,8 @@ class PostBuyApprovalService
         $acceptanceId = Str::uuid();
         $sessionId = Str::uuid();
         $paymentId = Str::uuid();
-        $approval = TradeRequest::where('id', $this->data->id)->first();
-        TradeRequest::where('id', $this->data->id)->update(['status' => 'accepted']);
+        $approval = TradeRequest::where('fund_reg', $reference)->first();
+        TradeRequest::where('fund_reg', $reference)->update(['status' => 'accepted']);
         $this->payload(
             buyeraccept: $approval,
             acceptanceId: $acceptanceId,
@@ -71,7 +69,6 @@ class PostBuyApprovalService
         $this->success = (object) [
             'status'    => $status,
             'title'     => $title,
-            'data'      => $this->trade,
             'const'    => self::PRECEDE_STATE['sessionStatus']
         ];
 

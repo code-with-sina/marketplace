@@ -129,7 +129,7 @@ class BuyApprovalService
         }
 
         $initReceipt = app(TransactionHookController::class);
-        $initReceipt->initBuyerRequestDebit(uuid: auth()->user()->uuid, reference: $this->trade->fund_reg);
+        $initReceipt->initBuyerApprovalDebit(uuid: auth()->user()->uuid, reference: $this->trade->fund_reg);
         $debitAmount = ((float) $this->trade->trade_rate * (float) $this->charge);
         $this->debitTrack = app(DebitService::class)
             ->getAmount(amount: $debitAmount, ref: $this->trade->fund_reg, uuid: auth()->user()->uuid)
@@ -145,38 +145,38 @@ class BuyApprovalService
         return $this;
     }
 
-    public function processPeerToPeer()
-    {
-        if ($this->failstate) {
-            return $this;
-        }
+    // public function processPeerToPeer()
+    // {
+    //     if ($this->failstate) {
+    //         return $this;
+    //     }
 
-        $acceptanceId = Str::uuid();
-        $sessionId = Str::uuid();
-        $paymentId = Str::uuid();
-        $approval = TradeRequest::where('id', $this->data->id)->first();
-        TradeRequest::where('id', $this->data->id)->update(['status' => 'accepted']);
-        $this->payload(
-            buyeraccept: $approval,
-            acceptanceId: $acceptanceId,
-            sessionId: $sessionId,
-            paymentId: $paymentId,
-            sessionStatus: self::PRECEDE_STATE['sessionStatus'],
-            paymentStatus: self::PRECEDE_STATE['paymentStatus'],
-            proofOfPayment: self::PRECEDE_STATE['proofOfPayment'],
-            reportage: self::PRECEDE_STATE['reportage'],
-            durationStatus: self::PRECEDE_STATE['durationStatus'],
-        )->createPeerToPeer();
+    //     $acceptanceId = Str::uuid();
+    //     $sessionId = Str::uuid();
+    //     $paymentId = Str::uuid();
+    //     $approval = TradeRequest::where('id', $this->data->id)->first();
+    //     TradeRequest::where('id', $this->data->id)->update(['status' => 'accepted']);
+    //     $this->payload(
+    //         buyeraccept: $approval,
+    //         acceptanceId: $acceptanceId,
+    //         sessionId: $sessionId,
+    //         paymentId: $paymentId,
+    //         sessionStatus: self::PRECEDE_STATE['sessionStatus'],
+    //         paymentStatus: self::PRECEDE_STATE['paymentStatus'],
+    //         proofOfPayment: self::PRECEDE_STATE['proofOfPayment'],
+    //         reportage: self::PRECEDE_STATE['reportage'],
+    //         durationStatus: self::PRECEDE_STATE['durationStatus'],
+    //     )->createPeerToPeer();
 
 
 
-        $this->setSuccessState(status: 200, title: __('Trade request approved successfully. You can proceed to transaction page'));
-        return $this;
-    }
+    //     $this->setSuccessState(status: 200, title: __('Trade request approved successfully. You can proceed to transaction page'));
+    //     return $this;
+    // }
 
     public function throwStatus()
     {
-
+        $this->setSuccessState(status: 200, title: __('Trade request approved successfully. You can proceed to transaction page'));
         return $this->failstate ? $this->fail : $this->success;
     }
 
