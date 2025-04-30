@@ -13,6 +13,7 @@ use App\Events\Chat as Dialogue;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\MessengerController;
+use App\Http\Controllers\TransactionHookController;
 
 class PeerPayment
 {
@@ -72,11 +73,6 @@ class PeerPayment
         $this->seller = $distribute->owner === "seller" ? $distribute->owner_id : $distribute->recipient_id;
         $this->buyer = $distribute->owner === "buyer" ? $distribute->owner_id : $distribute->recipient_id;
 
-        // if ($charge->offer === "Seller Offer") {
-        //     $this->isSell(charges: $charge);
-        // } else {
-        //     $this->isBuy(charges: $charge);
-        // }
         $this->deterUtils();
         return $this;
     }
@@ -124,6 +120,10 @@ class PeerPayment
             return $this;
         }
 
+        $initFee = app(TransactionHookController::class);
+        $initFee->initFeeDebit($this->buyer, $this->reference);
+
+        
         $feeState = app(FeeService::class)
             ->getAuthorizer($this->buyer, $this->reference)
             ->getAdmin()
@@ -147,6 +147,10 @@ class PeerPayment
             return $this;
         }
 
+
+        $initDisburesment = app(TransactionHookController::class);
+        $initDisburesment->initPeerPaymentDebit($this->buyer, $this->reference);
+
         $paymentState = app(PaymentService::class)
             ->fetchAmount(((float)$this->amount * (float)$this->tradeRate), $this->reference)
             ->getParticipants($this->seller, $this->buyer)
@@ -162,89 +166,90 @@ class PeerPayment
         return $this;
     }
 
-    public function updateTransaction()
-    {
-        if ($this->failstate)
-            return $this;
+    // public function updateTransaction()
+    // {
+    //     if ($this->failstate)
+    //         return $this;
 
-        PToP::where('session_id', $this->data->session_id)->update([
-            'proof_of_payment_status'   => 'accept',
-            'payment_status'    => 'released',
-            'session_status'   => 'closed'
-        ]);
+    //     PToP::where('session_id', $this->data->session_id)->update([
+    //         'proof_of_payment_status'   => 'accept',
+    //         'payment_status'    => 'released',
+    //         'session_status'   => 'closed'
+    //     ]);
 
-        $this->notifyData = PTop::where('session_id', $this->data->session_id)->first();
-        return $this;
-    }
+    //     $this->notifyData = PTop::where('session_id', $this->data->session_id)->first();
+    //     return $this;
+    // }
 
 
 
-    public function sendPaymentNotification()
-    {
-        if ($this->failstate)
-            return $this;
+    // public function sendPaymentNotification()
+    // {
+    //     if ($this->failstate)
+    //         return $this;
 
-        $messenger = app(MessengerController::class);
-        $messenger->sendTradeCompletionSuccessNotification(
-            owner: $this->notifyData->owner_id,
-            recipient: $this->notifyData->recipient_id,
-            amount: $this->notifyData->amount,
-            itemFor: $this->notifyData->item_for,
-            itemName: $this->notifyData->item_name,
-            itemId: $this->notifyData->item_id,
-            amountToRecieve: $this->notifyData->amount_to_receive
-        );
+    //     $messenger = app(MessengerController::class);
+    //     $messenger->sendTradeCompletionSuccessNotification(
+    //         owner: $this->notifyData->owner_id,
+    //         recipient: $this->notifyData->recipient_id,
+    //         amount: $this->notifyData->amount,
+    //         itemFor: $this->notifyData->item_for,
+    //         itemName: $this->notifyData->item_name,
+    //         itemId: $this->notifyData->item_id,
+    //         amountToRecieve: $this->notifyData->amount_to_receive
+    //     );
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
-    public function broadcastUpdate()
-    {
-        if ($this->failstate)
-            return $this;
-        $sender = '';
-        $receiver = '';
+    // public function broadcastUpdate()
+    // {
+    //     if ($this->failstate)
+    //         return $this;
+    //     $sender = '';
+    //     $receiver = '';
        
-        if (auth()->user()->uuid === $this->notifyData->owner_id) {
-            $sender = $this->notifyData->owner_id;      // Set sender as owner_id
-            $receiver = $this->notifyData->recipient_id; // Set receiver as recipient_id
-        }
-        elseif (auth()->user()->uuid === $this->notifyData->recipient_id) {
-            $sender = $this->notifyData->recipient_id;   // Set sender as recipient_id
-            $receiver = $this->notifyData->owner_id;      // Set receiver as owner_id
-        } else {
-            return response()->json([
-                'status' => 403,
-                'message' => 'User is neither the owner nor the recipient.'
-            ], 403);
-        }
+    //     if (auth()->user()->uuid === $this->notifyData->owner_id) {
+    //         $sender = $this->notifyData->owner_id;      // Set sender as owner_id
+    //         $receiver = $this->notifyData->recipient_id; // Set receiver as recipient_id
+    //     }
+    //     elseif (auth()->user()->uuid === $this->notifyData->recipient_id) {
+    //         $sender = $this->notifyData->recipient_id;   // Set sender as recipient_id
+    //         $receiver = $this->notifyData->owner_id;      // Set receiver as owner_id
+    //     } else {
+    //         return response()->json([
+    //             'status' => 403,
+    //             'message' => 'User is neither the owner nor the recipient.'
+    //         ], 403);
+    //     }
 
-        $user = User::where('uuid', $sender)->first();
-        broadcast(new Dialogue(
-            acceptance: $this->data->acceptance,
-            session: $this->data->session_id,
-            sender: $sender,
-            receiver: $receiver,
-            admin: null,
-            message: " I acknowledged your order fulfillment and I have released your payment. Kindly check your Ratefy wallet.",
-            filename: null,
-            contentType: 'text'
-        ))->toOthers();
+    //     $user = User::where('uuid', $sender)->first();
+    //     broadcast(new Dialogue(
+    //         acceptance: $this->data->acceptance,
+    //         session: $this->data->session_id,
+    //         sender: $sender,
+    //         receiver: $receiver,
+    //         admin: null,
+    //         message: " I acknowledged your order fulfillment and I have released your payment. Kindly check your Ratefy wallet.",
+    //         filename: null,
+    //         contentType: 'text'
+    //     ))->toOthers();
 
 
-        broadcast(new Update(
-            acceptance: $this->data->acceptance,
-            session: $this->data->session_id,
-            updateState: '2'
-        ))->toOthers();
+    //     broadcast(new Update(
+    //         acceptance: $this->data->acceptance,
+    //         session: $this->data->session_id,
+    //         updateState: '2'
+    //     ))->toOthers();
 
-        $this->setSuccessState(status: 200, title: 'Transaction completed successfully');
-        return $this;
-    }
+    //     $this->setSuccessState(status: 200, title: 'Transaction completed successfully');
+    //     return $this;
+    // }
 
 
     public function throwState()
     {
+        $this->setSuccessState(status: 200, title: 'Transaction inProgress');
         return $this->failstate ? $this->fail : $this->success;
     }
 

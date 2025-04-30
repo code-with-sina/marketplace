@@ -92,6 +92,7 @@ class InitiateRequestController extends Controller
             ->validateNoCancelledRequest()
             ->validateNoPreviousTrade()
             ->processPeerToPeer()
+            ->broadcastPeerToPeer()
             ->throwStatus();
 
         return response()->json($response, $response->status);

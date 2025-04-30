@@ -14,6 +14,8 @@ use App\Models\TransactionalJournal;
 use App\Services\PostBuyRequestService;
 use App\Http\Controllers\MessengerController;
 use App\Services\PostBuyApprovalService;
+use App\Services\PostPeerPaymentService;
+use Illuminate\Support\Sleep;
 
 class WebhookController extends Controller
 {
@@ -36,7 +38,6 @@ class WebhookController extends Controller
 
 
         if ($request->data['type'] === 'customer.identification.approved') {
-            // Log::info(['data' => $request->data]);
 
             $users = CustomerStatus::where('customerId', $request->data['relationships']['customer']['data']['id'])->first();
             $this->user = $users->user()->first();
@@ -113,9 +114,12 @@ class WebhookController extends Controller
 
             $payload = json_decode($request->getContent(), true);
             $transfer = collect($payload['included'])->firstWhere('type', 'BOOK_TRANSFER');
+            Log::info(['transfer' => $transfer]);
             $reference = $transfer['attributes']['reference'];
+            Log::info(['reference' => $reference]);
             $journal = TransactionalJournal::where('api_reference',  $reference)->first();
-            $transaction = TransactionEvent::where('reference',  $journal->source_reference)->where('status', 'initiated')->first();
+            Log::info(['journal' => $journal]);
+            $transaction = TransactionEvent::where('reference',  $journal->source_reference)->where('status', 'initiated')->latest()->first();
             if ($transaction->type == "BuyerRequest") {
                 TransactionEvent::where('reference',  $journal->source_reference)->update([
                     'status' => 'successful',
@@ -136,9 +140,7 @@ class WebhookController extends Controller
                 ->autoCancelTradeRequest()
                 ->successState()
                 ->throwStatus();
-            }
-
-            if ($transaction->type == "BuyerApproval") {
+            }elseif ($transaction->type == "BuyerApproval") {
                 TransactionEvent::where('reference',  $journal->source_reference)->update([
                     'status' => 'successful',
                     'event_id' => $payload['data']['id'],
@@ -150,52 +152,44 @@ class WebhookController extends Controller
 
                 app(PostBuyApprovalService::class)
                 ->processPeerToPeer($journal->source_reference)
+                ->broadcastPeerToPeer()
                 ->throwStatus();
+            }elseif ($transaction->type == "PeerPaymentFee") {
+                TransactionEvent::where('reference',  $journal->source_reference)->update([
+                    'status' => 'successful',
+                    'event_id' => $payload['data']['id'],
+                    'event_type' => $payload['data']['type'],
+                    'message' => $payload['data']['attributes']['failureEventData']['message'] ?? "null",
+                    'payload' => json_encode($payload),
+                    'event_time' => $payload['data']['attributes']['createdAt']
+                ]);
+
+               
+            }elseif ($transaction->type == "Disbursement") {
+                TransactionEvent::where('reference',  $journal->source_reference)->update([
+                    'status' => 'successful',
+                    'event_id' => $payload['data']['id'],
+                    'event_type' => $payload['data']['type'],
+                    'message' => $payload['data']['attributes']['failureEventData']['message'] ?? "null",
+                    'payload' => json_encode($payload),
+                    'event_time' => $payload['data']['attributes']['createdAt']
+                ]);
+
+                $fee = TransactionEvent::where('reference',  $journal->source_reference)->where('type', 'PeerPaymentFee')->where('status', 'successful')->first();
+                $disbursement = TransactionEvent::where('reference',  $journal->source_reference)->where('type', 'Disbursement')->where('status', 'successful')->first();
+                Log::info(['disbursement' => $disbursement]);
+                if($fee && $disbursement) {
+                    Log::info(['data' => "I got here"]);
+                    app(PostPeerPaymentService::class)
+                    ->getData($journal->source_reference)
+                    ->updateTransaction()
+                    ->sendPaymentNotification()
+                    ->broadcastUpdate()
+                    ->throwStatus();
+                } 
+            }else {
+                Log::info(['type' => $transaction->type]);
             }
-
-            // if ($transaction->type == "PeerPaymentFee") {
-            //     TransactionEvent::where('reference',  $journal->source_reference)->update([
-            //         'status' => 'successful',
-            //         'event_id' => $payload['data']['id'],
-            //         'event_type' => $payload['data']['type'],
-            //         'message' => $payload['data']['attributes']['failureEventData']['message'] ?? "null",
-            //         'payload' => json_encode($payload),
-            //         'event_time' => $payload['data']['attributes']['createdAt']
-            //     ]);
-
-            //     app(PostBuyRequestService::class)
-            //     ->retreiveTempTradeData($journal->source_reference)
-            //     ->DeterminantToolKit()
-            //     ->prepareCharge()
-            //     ->createTradeRequest()
-            //     ->sendAdminNotification()
-            //     ->notifyRecipient()
-            //     ->autoCancelTradeRequest()
-            //     ->successState()
-            //     ->throwStatus();
-            // }
-
-            // if ($transaction->type == "Disbursement") {
-            //     TransactionEvent::where('reference',  $journal->source_reference)->update([
-            //         'status' => 'successful',
-            //         'event_id' => $payload['data']['id'],
-            //         'event_type' => $payload['data']['type'],
-            //         'message' => $payload['data']['attributes']['failureEventData']['message'] ?? "null",
-            //         'payload' => json_encode($payload),
-            //         'event_time' => $payload['data']['attributes']['createdAt']
-            //     ]);
-
-            //     app(PostBuyRequestService::class)
-            //     ->retreiveTempTradeData($journal->source_reference)
-            //     ->DeterminantToolKit()
-            //     ->prepareCharge()
-            //     ->createTradeRequest()
-            //     ->sendAdminNotification()
-            //     ->notifyRecipient()
-            //     ->autoCancelTradeRequest()
-            //     ->successState()
-            //     ->throwStatus();
-            // }
             
          }
         return response()->json(['message' => 'Webhook processed successfully'], 200);

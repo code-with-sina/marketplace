@@ -314,9 +314,9 @@ class ChatController extends Controller
                 ->validateIfTransactionExist()
                 ->chargeFee()
                 ->makePayment()
-                ->updateTransaction()
-                ->sendPaymentNotification()
-                ->broadcastUpdate()
+                // ->updateTransaction()
+                // ->sendPaymentNotification()
+                // ->broadcastUpdate()
                 ->throwState();
 
             return response()->json($response, $response->status);

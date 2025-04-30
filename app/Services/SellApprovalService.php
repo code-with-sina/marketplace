@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Models\PToP;
+use App\Models\User;
 use Illuminate\Support\Str;
 use App\Models\TradeRequest;
+use App\Events\Chat as Dialogue;
 use App\TradeFacades\HasCreatePeerToPeer;
 use Illuminate\Support\Facades\Validator;
 
@@ -19,6 +21,8 @@ class SellApprovalService
     private $data;
     private $success;
     private $trade;
+    private $acceptanceUUId;
+    private $sessionUUId;
 
 
     const PRECEDE_STATE = [
@@ -89,13 +93,13 @@ class SellApprovalService
 
         TradeRequest::where('id', $this->data->id)->update(['status' => 'accepted']);
 
-        $acceptanceId   = Str::uuid();
-        $sessionId      = Str::uuid();
+        $this->acceptanceUUId   = Str::uuid();
+        $this->sessionUUId      = Str::uuid();
         $paymentId      = Str::uuid();
         $this->payload(
             buyeraccept: $this->trade,
-            acceptanceId: $acceptanceId,
-            sessionId: $sessionId,
+            acceptanceId: $this->acceptanceUUId,
+            sessionId: $this->sessionUUId,
             paymentId: $paymentId,
             sessionStatus: self::PRECEDE_STATE['sessionStatus'],
             paymentStatus: self::PRECEDE_STATE['paymentStatus'],
@@ -105,6 +109,30 @@ class SellApprovalService
         )->createPeerToPeer();
 
         $this->setSuccessState(status: 200, title: __('Trade request approved successfully. You can proceed to transaction page'));
+        return $this;
+    }
+
+    public function broadcastPeerToPeer()
+    {
+        if ($this->failstate) 
+        {
+            return $this;
+        }
+
+               
+        $dBuyer = User::where('uuid', $this->trade->owner)->first();
+        $dSeller = User::where('uuid', $this->trade->recipient)->first();
+        broadcast(new Dialogue(
+            acceptance: $this->acceptanceId,
+            session: $this->sessionId,
+            sender: "0eb8dc26-5a2a-403b-be04-58f3d659158c",
+            receiver: "0eb8dc26-5a2a-403b-be04-58f3d659158c",
+            admin: "0eb8dc26-5a2a-403b-be04-58f3d659158c",
+            filename: null,
+            message: "This transaction is taking place on this day " . now()->format('d-m-y') . ", between [Party A: {$dBuyer->username}] and [Party B: {$dSeller->username}], for the sum of about ₦{$this->trade->amount_to_receive}.",
+            contentType: 'text'
+        ))->toOthers();
+    
         return $this;
     }
 

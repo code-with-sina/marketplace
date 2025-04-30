@@ -2,11 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\TransactionEvent;
 use App\Models\User;
-use Illuminate\Support\Facades\Log;
-use App\Services\PostBuyRequestService;
 
 class TransactionHookController extends Controller
 {

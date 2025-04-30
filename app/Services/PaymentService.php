@@ -19,6 +19,11 @@ class PaymentService
     private $buyer;
     private $amount;
     private $reference;
+    private $sourceReference;
+    private $apiRef;
+    private $naration;
+ 
+    
 
     const SOURCE_ACCOUNT = "ESCROW";
     const DESTINATION_ACCOUNT = "PERSONAL";
@@ -159,7 +164,7 @@ class PaymentService
     {
         $allowedMethods = ['get', 'post', 'put', 'patch', 'delete'];
         if (!in_array($method, $allowedMethods)) {
-            throw new InvalidArgumentException("Invalid HTTP method: $method");
+            throw new \InvalidArgumentException("Invalid HTTP method: $method");
         }
 
         $url = $params ? env('ANCHOR_SANDBOX') . $endpoint . '/' . $params : env('ANCHOR_SANDBOX') . $endpoint;

@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
-
+use App\Models\User;
+use App\Events\Update;
 use Illuminate\Support\Str;
 use App\Models\TradeRequest;
+use App\Events\Chat as Dialogue;
 use App\TradeFacades\HasCreatePeerToPeer;
 
 
@@ -18,6 +20,9 @@ class PostBuyApprovalService
     private $success;
     private $charge;
     private $amount;
+    private $acceptanceUUid;
+    private $sessionUUid;
+    private $approval;
 
     const PRECEDE_STATE = [
         'sessionStatus' => 'open',
@@ -34,15 +39,15 @@ class PostBuyApprovalService
             return $this;
         }
 
-        $acceptanceId = Str::uuid();
-        $sessionId = Str::uuid();
+        $this->acceptanceUUid = Str::uuid();
+        $this->sessionUUid = Str::uuid();
         $paymentId = Str::uuid();
-        $approval = TradeRequest::where('fund_reg', $reference)->first();
+        $this->approval = TradeRequest::where('fund_reg', $reference)->first();
         TradeRequest::where('fund_reg', $reference)->update(['status' => 'accepted']);
         $this->payload(
-            buyeraccept: $approval,
-            acceptanceId: $acceptanceId,
-            sessionId: $sessionId,
+            buyeraccept: $this->approval,
+            acceptanceId: $this->acceptanceUUid,
+            sessionId: $this->sessionUUid,
             paymentId: $paymentId,
             sessionStatus: self::PRECEDE_STATE['sessionStatus'],
             paymentStatus: self::PRECEDE_STATE['paymentStatus'],
@@ -56,6 +61,33 @@ class PostBuyApprovalService
         $this->setSuccessState(status: 200, title: __('Trade request approved successfully. You can proceed to transaction page'));
         return $this;
     }
+
+
+
+    public function broadcastPeerToPeer()
+    {
+        if ($this->failstate) 
+        {
+            return $this;
+        }
+
+               
+        $dBuyer = User::where('uuid', $this->approval->owner)->first();
+        $dSeller = User::where('uuid', $this->approval->recipient)->first();
+        broadcast(new Dialogue(
+            acceptance: $this->acceptanceUUid,
+            session: $this->sessionUUid,
+            sender: "0eb8dc26-5a2a-403b-be04-58f3d659158c",
+            receiver: "0eb8dc26-5a2a-403b-be04-58f3d659158c",
+            admin: "0eb8dc26-5a2a-403b-be04-58f3d659158c",
+            filename: null,
+            message: "This transaction is taking place on this day " . now()->format('d-m-y') . ", between [Party A: {$dBuyer->username}] and [Party B: {$dSeller->username}], for the sum of about ₦{$this->approval->amount_to_receive}.",
+            contentType: 'text'
+        ))->toOthers();
+    
+        return $this;
+    }
+    
 
     public function throwStatus()
     {
