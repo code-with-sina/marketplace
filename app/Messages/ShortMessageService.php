@@ -44,7 +44,7 @@ class ShortMessageService
             'to'    => $this->to,
             'sms'   => $this->message,
             'type'  => 'plain',
-            'channel' => 'generic',
+            'channel' => 'dnd',
             'api_key'   => 'TLN6WXNS4VtM5n08puP15RPhsZhDRfyH64Ybi47mEkG5dFyQQ7DtCnYpk4eNk4',
         ]);
     }
