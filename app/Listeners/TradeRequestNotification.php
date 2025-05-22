@@ -30,7 +30,7 @@ class TradeRequestNotification
         $recipient = User::where('uuid', $event->owner)->first();
 
 
-        Notification::route('sms', trim($user->mobile, '+'))->notify(new Traded(trim($user->mobile, '+'), 'Hi, ' . $recipient->firstname . ' just placed a trade of  ' . $event->amount . ' units. Powered by Ratefy.'));
+        Notification::route('sms', trim($user->mobile, '+'))->notify(new Traded(trim($user->mobile, '+'), 'Hi, ' . $recipient->firstname . ' just placed a trade of  ' . $event->amount . ' units. Powered by Ratefy.'));
 
         $user->notify(new TradeRequestMail($event->amount, $event->amountInNaira, $user, $recipient, $event->item_id, $event->wallet_name, $event->item));
     }

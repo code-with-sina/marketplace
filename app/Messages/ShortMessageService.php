@@ -40,7 +40,7 @@ class ShortMessageService
         }
 
         return Http::post('https://api.ng.termii.com/api/sms/send', [
-            'from'  => 'ratefy',
+            'from'  => 'N-Alert',
             'to'    => $this->to,
             'sms'   => $this->message,
             'type'  => 'plain',
