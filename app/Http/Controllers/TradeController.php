@@ -166,77 +166,77 @@ class TradeController extends Controller
     }
 
 
-    public function returnFundToBuyerAccount(Request $request)
-    {
-        $user = User::find(auth()->user()->id);
-        $fetchAdminAccount = $user->customerstatus()->first();
-        // $fetchBuyerAccount = CustomerStatus::where('uuid', $request->uuid)->where('reg', $request->reg)->first();
-        $payload = [
-            "data" => [
-                "attributes" => [
-                    "currency"  => "NGN",
-                    "amount"    => ($fetchBuyerAccount->amount * 100),
-                    "reason"    => "withheld for trade transaction",
-                    "reference" => Str::uuid()
-                ],
-                "relationships" => [
-                    "destinationAccount" => [
-                        "data"  => [
-                            "type"  => $fetchBuyerAccount->customer()->first()->personalaccount()->first()->personalType,
-                            "id"    => $fetchBuyerAccount->customer()->first()->personalaccount()->first()->personalId
-                        ]
-                    ],
-                    "account" => [
-                        "data"  => [
-                            "type"  => $fetchBuyerAccount->customer()->first()->escrowaccount()->first()->escrowType,
-                            "id"    => $fetchBuyerAccount->customer()->first()->escrowaccount()->first()->escrowId
+    // public function returnFundToBuyerAccount(Request $request)
+    // {
+    //     $user = User::find(auth()->user()->id);
+    //     $fetchAdminAccount = $user->customerstatus()->first();
+    //     // $fetchBuyerAccount = CustomerStatus::where('uuid', $request->uuid)->where('reg', $request->reg)->first();
+    //     $payload = [
+    //         "data" => [
+    //             "attributes" => [
+    //                 "currency"  => "NGN",
+    //                 "amount"    => ($fetchBuyerAccount->amount * 100),
+    //                 "reason"    => "withheld for trade transaction",
+    //                 "reference" => Str::uuid()
+    //             ],
+    //             "relationships" => [
+    //                 "destinationAccount" => [
+    //                     "data"  => [
+    //                         "type"  => $fetchBuyerAccount->customer()->first()->personalaccount()->first()->personalType,
+    //                         "id"    => $fetchBuyerAccount->customer()->first()->personalaccount()->first()->personalId
+    //                     ]
+    //                 ],
+    //                 "account" => [
+    //                     "data"  => [
+    //                         "type"  => $fetchBuyerAccount->customer()->first()->escrowaccount()->first()->escrowType,
+    //                         "id"    => $fetchBuyerAccount->customer()->first()->escrowaccount()->first()->escrowId
 
 
-                        ]
-                    ]
-                ],
-                "type" => "BookTransfer"
-            ]
-        ];
+    //                     ]
+    //                 ]
+    //             ],
+    //             "type" => "BookTransfer"
+    //         ]
+    //     ];
 
-        $makeWithHolding = $this->ToObject($payload);
+    //     $makeWithHolding = $this->ToObject($payload);
 
-        $transfer =  Http::withHeaders([
-            'accept' => 'application/json',
-            'content-type' => 'application/json',
-            'x-anchor-key' => env('ANCHOR_KEY'),
-        ])->post(env('ANCHOR_SANDBOX') . "transfers", $makeWithHolding);
+    //     $transfer =  Http::withHeaders([
+    //         'accept' => 'application/json',
+    //         'content-type' => 'application/json',
+    //         'x-anchor-key' => env('ANCHOR_KEY'),
+    //     ])->post(env('ANCHOR_SANDBOX') . "transfers", $makeWithHolding);
 
-        if ($transfer->status() === 200 || $transfer->status() === 202) {
-            $createTradeLog = $this->createTradeLog(
-                trnxObj: $transfer->object(),
-                regs: $request->regs,
-                acceptance: $request->acceptance_id,
-                itemFor: $request->item_for,
-                buyerId: auth()->user()->uuid,
-                state: $request->state,
-                direction: $request->direction,
-                walletName: $request->walletName,
-                sellerId: $request->sellerId
-            );
-            return response()->json($createTradeLog);
-        } elseif ($transfer->status() === 201) {
-            $createTradeLog = $this->createTradeLog(
-                trnxObj: $transfer->object(),
-                regs: $request->regs,
-                direction: $request->direction,
-                acceptance: $request->acceptance_id,
-                itemFor: $request->item_for,
-                buyerId: auth()->user()->uuid,
-                state: $request->state,
-                sellerId: $request->sellerId,
-                walletName: $request->walletName,
-            );
-            return response()->json($createTradeLog);
-        } else {
-            return response()->json($transfer->object());
-        }
-    }
+    //     if ($transfer->status() === 200 || $transfer->status() === 202) {
+    //         $createTradeLog = $this->createTradeLog(
+    //             trnxObj: $transfer->object(),
+    //             regs: $request->regs,
+    //             acceptance: $request->acceptance_id,
+    //             itemFor: $request->item_for,
+    //             buyerId: auth()->user()->uuid,
+    //             state: $request->state,
+    //             direction: $request->direction,
+    //             walletName: $request->walletName,
+    //             sellerId: $request->sellerId
+    //         );
+    //         return response()->json($createTradeLog);
+    //     } elseif ($transfer->status() === 201) {
+    //         $createTradeLog = $this->createTradeLog(
+    //             trnxObj: $transfer->object(),
+    //             regs: $request->regs,
+    //             direction: $request->direction,
+    //             acceptance: $request->acceptance_id,
+    //             itemFor: $request->item_for,
+    //             buyerId: auth()->user()->uuid,
+    //             state: $request->state,
+    //             sellerId: $request->sellerId,
+    //             walletName: $request->walletName,
+    //         );
+    //         return response()->json($createTradeLog);
+    //     } else {
+    //         return response()->json($transfer->object());
+    //     }
+    // }
 
 
 
@@ -255,6 +255,7 @@ class TradeController extends Controller
     {
         $props = User::find(auth()->user()->id);
         $user = $props->customerstatus()->first();
+
         $data = Http::withHeaders([
             'accept' => 'application/json',
             'content-type' => 'application/json',
@@ -297,7 +298,9 @@ class TradeController extends Controller
     {
 
         $props = User::find(auth()->user()->id);
+       
         $user = $props->customerstatus()->first();
+
         $data = Http::withHeaders([
             'accept' => 'application/json',
             'content-type' => 'application/json',
@@ -351,35 +354,35 @@ class TradeController extends Controller
         return $withdrawal;
     }
 
-    public function adminFee()
-    {
-        $payload = [
-            "data" => [
-                "attributes" => [
-                    "currency"  => "NGN",
-                    "amount"    => $tradeLog->amount,
-                    "reason"    => "withheld for trade transaction",
-                    "reference" => Str::uuid()
-                ],
-                "relationships" => [
-                    "destinationAccount" => [
-                        "data"  => [
-                            "type"  => $fetchSellerAccount->customer()->first()->personalaccount()->first()->personalType,
-                            "id"    => $fetchSellerAccount->customer()->first()->personalaccount()->first()->personalId
-                        ]
-                    ],
-                    "account" => [
-                        "data"  => [
-                            "type"  => $fetchAdminAccount->adminaccount()->first()->botType,
-                            "id"    => $fetchAdminAccount->adminaccount()->first()->botId
+    // public function adminFee()
+    // {
+    //     $payload = [
+    //         "data" => [
+    //             "attributes" => [
+    //                 "currency"  => "NGN",
+    //                 "amount"    => $tradeLog->amount,
+    //                 "reason"    => "withheld for trade transaction",
+    //                 "reference" => Str::uuid()
+    //             ],
+    //             "relationships" => [
+    //                 "destinationAccount" => [
+    //                     "data"  => [
+    //                         "type"  => $fetchSellerAccount->customer()->first()->personalaccount()->first()->personalType,
+    //                         "id"    => $fetchSellerAccount->customer()->first()->personalaccount()->first()->personalId
+    //                     ]
+    //                 ],
+    //                 "account" => [
+    //                     "data"  => [
+    //                         "type"  => $fetchAdminAccount->adminaccount()->first()->botType,
+    //                         "id"    => $fetchAdminAccount->adminaccount()->first()->botId
 
-                        ]
-                    ]
-                ],
-                "type" => "BookTransfer"
-            ]
-        ];
-    }
+    //                     ]
+    //                 ]
+    //             ],
+    //             "type" => "BookTransfer"
+    //         ]
+    //     ];
+    // }
 
     public function charge($amount)
     {

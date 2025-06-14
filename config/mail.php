@@ -130,7 +130,8 @@ return [
             resource_path('views/vendor/mail'),
         ],
         'extensions' => [
-            new \League\CommonMark\Extension\Table\TableExtension(),
+            League\CommonMark\Extension\Table\TableExtension::class,
+            // new \League\CommonMark\Extension\Table\TableExtension(),
         ],
     ],
 
