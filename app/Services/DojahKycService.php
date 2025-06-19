@@ -5,9 +5,11 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\KycDetail;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 
 class DojahKycService 
@@ -37,6 +39,34 @@ class DojahKycService
             $this->setFailedState(status: 400, title: __("Sorry, We couldn't find the user"));
             return $this;
         }
+
+
+        $validator = Validator::make([
+            'bvn' => $bvn,
+            'selfie_image' => $selfieImage,
+            'street' => $street,
+            'city' => $city,
+            'state' => $state,
+            'country' => $country,
+            'house_number' => $house_number,
+        ], [
+            'bvn' => ['required', 'digits:11', 'unique:kyc_details,bvn'],
+            'selfie_image' => ['required', function ($attribute, $value, $fail) {
+                if (!is_string($value) || !str_starts_with($value, '/9')) {
+                    $fail('The selfie image must be a valid base64 JPEG truncated buffer.');
+                }
+            }],
+            'street' => ['required', 'string'],
+            'city' => ['required', 'string'],
+            'state' => ['required', 'string'],
+            'country' => ['required', 'string'],
+            'house_number' => ['required', 'string'],
+        ]);
+
+        if ($validator->fails()) {
+            return $this->setFailedState(422, $validator->errors()->first());
+        }
+
         if (!$bvn) {
             $this->setFailedState(status: 400, title: __("Sorry, no bvn added"));
             return $this;
@@ -82,8 +112,6 @@ class DojahKycService
         $this->kycData->state = $state;
         $this->kycData->country = $country;
         $this->kycData->house_number = $house_number;
-
-       
 
         return $this;
     }
