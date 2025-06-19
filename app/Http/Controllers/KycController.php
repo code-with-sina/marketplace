@@ -94,22 +94,21 @@ class KycController extends Controller
         $payload = [
             "dateOfBirth"   => $data->dateOfBirth,
             "bvn"           => $data->bvn,
-            "idNumber"      => $data->idNumber,
-            "idType"        => $data->idType,
+            "idNumber"      => "00000000000",
+            "idType"        => "NIN",
             "gender"        => $data->gender,
-            "expiryDate"    => $data->expiryDate
+            "expiryDate"    => "2025-12-12",
         ];
 
 
         $statusResource = app(OnboardCustomerService::class, ['user' => auth()->user()])
             ->acquireUserDataAndValidate(edit: false)
-            ->createMember(collections: $payload, selfieimage: 'https://p2p.ratefy.co/upload/validation/' . $filename)
+            ->createMember(collections: $payload, selfieimage: $data->image)
             ->validateLevelOneKyc()
             ->monitorKycStatus()
             ->throwStatus();
 
-        return response()->json($statusResource, $statusResource->status);
-         
+        return response()->json($statusResource, $statusResource->status);  
         
     }
 }
