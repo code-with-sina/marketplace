@@ -336,7 +336,7 @@ class OnboardCustomerService
     {
         $allowedMethods = ['get', 'post', 'put', 'patch', 'delete'];
         if (!in_array($method, $allowedMethods)) {
-            throw new InvalidArgumentException("Invalid HTTP method: $method");
+            throw new \InvalidArgumentException("Invalid HTTP method: $method");
         }
 
         $url = $params ? env('ANCHOR_SANDBOX') . $endpoint . '/' . $params : env('ANCHOR_SANDBOX') . $endpoint;
