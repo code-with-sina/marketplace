@@ -341,7 +341,7 @@ class OnboardCustomerService
 
         $url = $params ? env('ANCHOR_SANDBOX') . $endpoint . '/' . $params : env('ANCHOR_SANDBOX') . $endpoint;
 
-        \Log::error($url);
+
 
         try {
             $customerObject = Http::withHeaders([

@@ -180,4 +180,9 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasOne(KycDetail::class);
     }
+
+    public function works(): HasOne
+    {
+        return $this->hasOne(Work::class);
+    }
 }
