@@ -5,11 +5,10 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\KycDetail;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
+
 
 
 class DojahKycService 
@@ -23,7 +22,7 @@ class DojahKycService
 
     protected const BVN_VALIDATION_FAILED = "Sorry, We couldn't validate your bvn";
 
-    public function getFetchUserDetail($uuid) 
+    public function getUserDetail($uuid) 
     {
         $this->user = User::where('uuid', $uuid)->first();
         if (!$this->user) {
@@ -38,33 +37,6 @@ class DojahKycService
         if (!$this->user) {
             $this->setFailedState(status: 400, title: __("Sorry, We couldn't find the user"));
             return $this;
-        }
-
-
-        $validator = Validator::make([
-            'bvn' => $bvn,
-            'selfie_image' => $selfieImage,
-            'street' => $street,
-            'city' => $city,
-            'state' => $state,
-            'country' => $country,
-            'house_number' => $house_number,
-        ], [
-            'bvn' => ['required', 'digits:11', 'unique:kyc_details,bvn'],
-            'selfie_image' => ['required', function ($attribute, $value, $fail) {
-                if (!is_string($value) || !str_starts_with($value, '/9')) {
-                    $fail('The selfie image must be a valid base64 JPEG truncated buffer.');
-                }
-            }],
-            'street' => ['required', 'string'],
-            'city' => ['required', 'string'],
-            'state' => ['required', 'string'],
-            'country' => ['required', 'string'],
-            'house_number' => ['required', 'string'],
-        ]);
-
-        if ($validator->fails()) {
-            return $this->setFailedState(422, $validator->errors()->first());
         }
 
         if (!$bvn) {
@@ -156,8 +128,12 @@ class DojahKycService
 
         $base64Truncated = $resData->image;
         $base64 = "data:image/jpeg;base64," . $base64Truncated;
+        $selfieImage = $base64;
+        if (!str_starts_with($selfieImage, 'data:image/jpeg;base64,')) {
+            $selfieImage = "data:image/jpeg;base64," . $selfieImage;
+        }
 
-        $initialImage = $this->saveBase64Image($base64, 'kycselfieimages');
+        $initialImage = $this->saveBase64Image($selfieImage, 'kycselfieimages');
 
 
         KycDetail::where('bvn', $resData->bvn)->update([
@@ -220,7 +196,7 @@ class DojahKycService
                     'accept' => 'application/json',
                     'content-type' => 'application/json',
                     'Authorization' =>  env('DOJAH_KYC_API_KEY'),
-                    'AppId' => env('DOJAH_KYC_API_KEY'),
+                    'AppId' => env('DOJAH_KYC_APP_ID'),
                 ])->$method($url, $objectData);
                 return (object)['statusCode' => $customerObject->status(), 'data' => $customerObject->object()];
             
