@@ -32,7 +32,7 @@ class DojahKycService
     }
 
 
-    public function getValidationDetails($bvn, $selfieImage, $street, $city, $state, $country, $house_number) 
+    public function getValidationDetails($bvn, $selfieImage, $street, $city, $state,  $house_number) 
     {
         if (!$this->user) {
             $this->setFailedState(status: 400, title: __("Sorry, We couldn't find the user"));
@@ -63,10 +63,6 @@ class DojahKycService
             return $this;
         }
 
-        if (!$country) {
-            $this->setFailedState(status: 400, title: __("Sorry, no country added"));
-            return $this;
-        }
 
         if (!$house_number) {
             $this->setFailedState(status: 400, title: __("Sorry, no house_number added"));
@@ -82,7 +78,7 @@ class DojahKycService
         $this->kycData->street = $street;
         $this->kycData->city = $city;
         $this->kycData->state = $state;
-        $this->kycData->country = $country;
+        $this->kycData->country = "NG"; // Default country set to Nigeria
         $this->kycData->house_number = $house_number;
 
         return $this;
@@ -99,7 +95,7 @@ class DojahKycService
             'street'    => $this->kycData->street ?? null,
             'city'      => $this->kycData->city ?? null,      
             'state'     => $this->kycData->state ?? null,
-            'country'   => $this->kycData->country ?? "NG",
+            'country'   => $this->kycData->country,
             'house_number' => $this->kycData->house_number,
             'bvn'       => $this->kycData->bvn,
         ]);

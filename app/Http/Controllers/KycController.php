@@ -9,6 +9,8 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
 use App\Services\DojahKycService;
 use App\Services\OnboardCustomerService;
+use App\Services\KycCheckerService;
+use App\Services\UpdateAccountService;
 
 class KycController extends Controller
 {
@@ -19,7 +21,6 @@ class KycController extends Controller
             'street' => $request->street,
             'city' => $request->city,
             'state' => $request->state,
-            'country' => $request->country,
             'house_number' => $request->house_number,
         ], [
             'bvn' => ['required', 'digits:11', 'unique:kyc_details,bvn'],
@@ -47,7 +48,6 @@ class KycController extends Controller
             street: $request->street,
             city: $request->city,
             state: $request->state,
-            country: $request->country,
             house_number: $request->house_number
         )
         ->savePrimitiveData()
@@ -110,5 +110,51 @@ class KycController extends Controller
 
         return response()->json($statusResource, $statusResource->status);  
         
+    }
+
+
+
+    public function WalletRetriggerAndSubAccountUpdate(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'uuid' => 'required|string'
+        ]);
+
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        app(KycCheckerService::class)
+            ->getUuid($request->uuid)
+            ->checkStatus()
+            ->OnboardCustomerAgain();
+    }
+
+
+    public function updateUserSubAccount(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'uuid' => 'required|string'
+        ]);
+
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $response = app(UpdateAccountService::class)
+            ->getUser(uuid: $request->uuid)
+            ->validateUserHasPersonalAccount()
+            ->validateUserHasEscrowAccount()
+            // ->fetchAccount()
+            ->setState()
+            ->updateAccount();
+
+        return response()->json($response);
     }
 }

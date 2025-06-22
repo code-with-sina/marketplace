@@ -209,11 +209,11 @@ class AdminController extends Controller
         return response()->json($data);
     }
 
-    public function logTrack()
-    {
-        $data = ErrorTrace::where('user_id', null)->orderBy('id', 'DESC')->paginate(10);
-        return response()->json($data);
-    }
+    // public function logTrack()
+    // {
+    //     $data = ErrorTrace::where('user_id', null)->orderBy('id', 'DESC')->paginate(10);
+    //     return response()->json($data);
+    // }
 
     public function userTrack($uuid)
     {
