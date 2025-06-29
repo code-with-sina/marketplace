@@ -183,27 +183,7 @@ class InitiateRequestController extends Controller
     }
 
 
-    /* Don't know where this was used but will figure it out latter */
-    public function returnFundToBuyerAccount($ledgerKey, $authorizer, $amount, $offerRate, $walletName, $sellerId, $itemFor)
-    {
-        try {
-            Log::info([$ledgerKey, $authorizer, $amount, $offerRate, $walletName, $sellerId, $itemFor]);
-            Http::post('https://walletbased.ratefy.co/api/customer/trade/return-fund-to-buyer-account', [
-                'uuid'          => $authorizer,
-                'amount'        => ($amount * $offerRate),
-                'regs'          => $ledgerKey,
-                'state'         => 'withhold',
-                'direction'     => 'incoming',
-                'walletName'    => $walletName,
-                'sellerId'      => $sellerId,
-                'item_for'      => $itemFor
-
-            ])->throw();
-        } catch (\Exception $e) {
-            return $e->getMessage();
-        }
-    }
-
+   
 
 
     public function fetchTrade(Request $request)

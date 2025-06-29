@@ -7,9 +7,7 @@ use App\Http\Controllers\TradeController;
 use App\Http\Controllers\CustomersController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\KycController;
-
-
-
+use App\Models\Kyc;
 
 /* 
 
@@ -91,7 +89,7 @@ Route::middleware(['urlguard', 'auth:sanctum'])->group(function () {
     Route::post('otp-confirmation',                                                                         [CustomersController::class, 'confirmOtp'])->middleware(['emailVerifiedAuth', 'profileAuth', 'log.activity']);
     Route::post('resend-otp',                                                                               [CustomersController::class, 'resendOtp'])->middleware(['emailVerifiedAuth', 'profileAuth', 'log.activity']);
 
-    Route::post('validet-kyc-dojah',                                                                        [KycController::class, 'kycGate'])->middleware(['emailVerifiedAuth']);
+    Route::post('validate-kyc-dojah',                                                                        [KycController::class, 'kycGate'])->middleware(['emailVerifiedAuth']);
     Route::post('work-declaration',                                                                         [KycController::class, 'workDeclarationAndWalletOnboarding'])->middleware(['emailVerifiedAuth']);
     Route::get('withdrawal-history',                                                                       [CustomersController::class, 'fetchWithdrawalHistory'])->middleware(['emailVerifiedAuth', 'profileAuth', 'log.activity']);
 
@@ -100,6 +98,13 @@ Route::middleware(['urlguard', 'auth:sanctum'])->group(function () {
 });
 
 
+
+Route::get('meta-pixel-test', [KycController::class, 'metaPixelTest']);
+Route::get('get-users-data', [KycController::class, 'getUsersData']);
+Route::get('update-users-privilege',              [KycController::class, 'updateUserPriviledges']);
+Route::get('update-users-customers-account',              [KycController::class, 'updateUsercustomerAccount']);
+Route::get('get-users-email',              [KycController::class, 'getEmailCheck']);
+Route::get('insert-specific-users',              [KycController::class, 'updateUsers']);
 
 // Route::post('admin/get-external-approval',  [CustomersController::class, 'getExternalKycApprovalStatus']);
 // Route::post('admin/approve-external-kyc',   [CustomersController::class, 'approveExternalKycStatus']);

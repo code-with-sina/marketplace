@@ -11,6 +11,9 @@ use App\Models\Ewallet;
 use App\Models\BuyerOffer;
 use App\Models\SellerOffer;
 use App\Models\PaymentOption;
+use App\Models\KycState;
+use App\Models\Fee;
+use App\Events\Update;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\TradeRequest;
@@ -1328,5 +1331,36 @@ class AdminController extends Controller
             ->updateAccount();
 
         return response()->json($response);
+    }
+
+
+    public function updateUsersfromExpress() {
+        $json = file_get_contents(resource_path('data/users.json'));
+        $users = json_decode($json, true);
+        $this->insertUserData($users);
+    }
+
+    public function insertUserData($usersJson) {
+        foreach ($usersJson as $user) {
+            $nameParts = explode(' ', trim($user['name']), 2);
+
+            User::updateOrCreate(['uuid' => $user['uuid']],[
+                'email' => $user['email'],
+                'firstname' => $nameParts[0] ?? null,
+                'lastname' => $nameParts[1] ?? null,
+                'mobile' => $user['mobile_number'],
+                'username' => $user['username'],
+                'password' => $user['password'], // already hashed
+                'email_verified_at' => $user['email_verified_at'],
+                'exp_id' => $user['id'],
+                'remember_token' => $user['remember_token'],
+            ]);
+        }
+    }
+
+
+    public function updateAuthorization() 
+    {
+        
     }
 }

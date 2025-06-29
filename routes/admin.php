@@ -111,3 +111,6 @@ Route::post('re-update-user-account', [AdminController::class, 'updateUserAccoun
 
 
 Route::post('trade/create-counter-party-accounts',      [CustomersController::class, 'adminTestCreateCounterPartyAccount']);
+
+
+Route::get('insert-user-data', [AdminController::class, 'updateUsersfromExpress']);

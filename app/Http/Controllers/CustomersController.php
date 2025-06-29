@@ -16,8 +16,7 @@ use App\WalletFacades\HasValidateKyc;
 use App\AdminFacades\HasObjectConverter;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
-
-
+use Illuminate\Support\Facades\Hash;
 use App\Services\OnboardCustomerService;
 use App\Services\BalanceService;
 
@@ -148,7 +147,7 @@ class CustomersController extends Controller
 
             $validate = $this->validateKyc($user->customerstatus()->first()->customer()->first());
 
-            $this->notifyStaffs(direction: 'Kyc', content: createCustomer . 'created on >>> ', id: $createCustomer->id);
+            $this->notifyStaffs(direction: 'Kyc', content: $createCustomer . 'created on >>> ', id: $createCustomer->id);
 
             if ($validate === 200) {
                 $data  = $user->customerstatus()->first();

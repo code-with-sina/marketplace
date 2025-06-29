@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('counter_party_accounts', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('customer_id')->constrained('customers')->cascadeOnDelete()->cascadeOnUpdate();
+            $table->foreignId('customer_id');
             $table->string('counterPartyId');
             $table->string('counterPartyType');
             $table->string('bankId');

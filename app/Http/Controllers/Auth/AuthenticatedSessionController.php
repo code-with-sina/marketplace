@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 
+
 class AuthenticatedSessionController extends Controller
 {
     use HasActivityLog;
@@ -53,6 +54,9 @@ class AuthenticatedSessionController extends Controller
                 'token' => $token
             ]);
         }
+
+
+        
     }
 
 

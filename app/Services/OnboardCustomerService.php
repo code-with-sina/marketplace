@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\OnboardCustomerServiceTrack;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
+use App\Services\MetaPixelConversionService;
 
 
 class OnboardCustomerService
@@ -141,7 +142,7 @@ class OnboardCustomerService
 
     public function throwStatus()
     {
-        return $this->statefulError ?  $this->errorMessage : $this->state;
+        return $this->statefulError ?  $this->errorMessage : tap($this->state, fn() => $this->callMetaPixel() );
     }
 
 
@@ -404,5 +405,19 @@ class OnboardCustomerService
             'title' => $title
         ];
         return $this;
+    }
+
+
+    public function callMetaPixel() 
+    {
+        app(MetaPixelConversionService::class)
+                ->eventId($this->user->uuid)
+                ->eventName('KYC')
+                ->eventTime(time())
+                ->userData(email: $this->user->email, phone: $this->user->mobile,  customerIp: null, customerUserAgent: null, fbc: null, fbp: null)
+                ->customData(userId: $this->user->id, actionTaken: 'KYC Completion', segment: 'KYC', status: 'success')
+                ->eventSourceURL(env('APP_URL'))
+                ->actionSource('website')
+                ->sendToMeta();
     }
 }

@@ -21,6 +21,7 @@ use App\Mail\Verification;
 use App\Notifications\Verification as NotificationsVerification;
 use App\UserFacades\HasRegistrationValidation;
 use Illuminate\Support\Carbon;
+use App\Services\MetaPixelConversionService;
 
 use App\UserFacades\HasUserFillable;
 
@@ -101,6 +102,16 @@ class RegisteredUserController extends Controller
                         return response(['data' => $user, 'subdomain' => null, 'token' => $token], 200);
                     }
                 }
+
+                app(MetaPixelConversionService::class)
+                ->eventId($user->uuid)
+                ->eventName('Register')
+                ->eventTime(time())
+                ->userData(email: $user->email, phone: $user->mobile,  customerIp: $request->ip(), customerUserAgent: $request->header('User-Agent'), fbc: $request->cookie('_fbc'), fbp: $request->cookie('_fbp'))
+                ->customData(userId: $user->id, actionTaken: 'Sign Up', segment: 'User Registeration', status: 'success')
+                ->eventSourceURL(env('APP_URL'))
+                ->actionSource('website')
+                ->sendToMeta();
             }
         }
     }

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
+use App\Services\MetaPixelConversionService;
 
 class PaymentService
 {
@@ -129,6 +130,25 @@ class PaymentService
             $this->setFailedState(status: 400, title: __("Sorry! We couldn't create a trade request at the moment. Please try again later." . $e->getMessage()));
         }
 
+        app(MetaPixelConversionService::class)
+                ->eventId($this->buyer->uuid)
+                ->eventName('Register')
+                ->eventTime(time())
+                ->userData(email: $this->buyer->email, phone: $this->buyer->mobile,  customerIp: null, customerUserAgent: null, fbc: null, fbp: null)
+                ->customData(userId: $this->buyer->id, actionTaken: 'Completed Transaction', segment: 'Transactions', status: 'success')
+                ->eventSourceURL(env('APP_URL'))
+                ->actionSource('website')
+                ->sendToMeta();
+
+        app(MetaPixelConversionService::class)
+                ->eventId($this->seller->uuid)
+                ->eventName('Register')
+                ->eventTime(time())
+                ->userData(email: $this->seller->email, phone: $this->seller->mobile,  customerIp: null, customerUserAgent: null, fbc: null, fbp: null)
+                ->customData(userId: $this->seller->id, actionTaken: 'Completed Transaction', segment: 'Transactions', status: 'success')
+                ->eventSourceURL(env('APP_URL'))
+                ->actionSource('website')
+                ->sendToMeta();
         return $this;
     }
 

@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-
+use App\Services\MetaPixelConversionService;
 
 
 class DojahKycService 
@@ -19,8 +19,14 @@ class DojahKycService
     public $failstate;
     public $success;
     public $kycData;
+    public $editState;
 
     protected const BVN_VALIDATION_FAILED = "Sorry, We couldn't validate your bvn";
+
+    public function primitiveState($editState) {
+        $this->editState = $editState;
+        return $this;
+    }
 
     public function getUserDetail($uuid) 
     {
@@ -32,7 +38,7 @@ class DojahKycService
     }
 
 
-    public function getValidationDetails($bvn, $selfieImage, $street, $city, $state,  $house_number) 
+    public function getValidationDetails($bvn, $selfieImage, $street, $city, $state,  $house_number, $zip_code) 
     {
         if (!$this->user) {
             $this->setFailedState(status: 400, title: __("Sorry, We couldn't find the user"));
@@ -69,7 +75,12 @@ class DojahKycService
             return $this;
         }
 
-        $selfieImage = Storage::disk('public')->put('selfie', $selfieImage);
+        if(!$zip_code) {
+             $this->setFailedState(status: 400, title: __("Sorry, no house_number added"));
+            return $this;
+        }
+
+       
 
         $this->kycData = new \stdClass();
 
@@ -80,6 +91,7 @@ class DojahKycService
         $this->kycData->state = $state;
         $this->kycData->country = "NG"; // Default country set to Nigeria
         $this->kycData->house_number = $house_number;
+        $this->kycData->zip_code = $zip_code;
 
         return $this;
     }
@@ -91,15 +103,30 @@ class DojahKycService
         if ($this->failstate)
             return $this;
 
-        $this->user->kycdetail()->create([
-            'street'    => $this->kycData->street ?? null,
-            'city'      => $this->kycData->city ?? null,      
-            'state'     => $this->kycData->state ?? null,
-            'country'   => $this->kycData->country,
-            'house_number' => $this->kycData->house_number,
-            'bvn'       => $this->kycData->bvn,
-        ]);
+        if($this->editState === true) {
+             $this->user->kycdetail()->update([
+                'street'    => $this->kycData->street ?? null,
+                'city'      => $this->kycData->city ?? null,      
+                'state'     => $this->kycData->state ?? null,
+                'country'   => $this->kycData->country,
+                'house_number' => $this->kycData->house_number,
+                'bvn'       => $this->kycData->bvn,
+                'zip_code'  => $this->kycData->zip_code,
+            ]);
 
+        }else {
+             $this->user->kycdetail()->create([
+                'street'    => $this->kycData->street ?? null,
+                'city'      => $this->kycData->city ?? null,      
+                'state'     => $this->kycData->state ?? null,
+                'country'   => $this->kycData->country,
+                'house_number' => $this->kycData->house_number,
+                'bvn'       => $this->kycData->bvn,
+                'zip_code'  => $this->kycData->zip_code,
+            ]);
+
+        }
+       
         return $this;
     }
 
@@ -110,17 +137,25 @@ class DojahKycService
 
         $data = [
             'bvn' => $this->kycData->bvn,
-            'selfie' => $this->kycData->selfie,
+            'selfie_image' => $this->kycData->selfie,
         ];
 
-        $response = $this->appTransport('post', null, (object)$data, '/api/v1/kyc/bvn/verify');
+        Log::info(["Dojah KYC Response" =>  $data]);
+        $response = $this->appTransport('post', '/api/v1/kyc/bvn/verify', (object)$data);
 
-        if ($response->statusCode != 200 || $response->data->status != 'success') {
-            return $this->setFailedState(400, __("Sorry, We couldn't validate your bvn"));
+        if ($response->statusCode != 200 ) {
+            $this->setFailedState(400, __("Sorry, We couldn't validate your bvn"));
+            return $this;
         }
 
-        $resData = $response->entity;
 
+        if($response->data->entity->selfie_verification->match === false) {
+             $this->setFailedState(400, __("Sorry, Your selfie verification did not match. Please try again with a clearer image."));
+            return $this;
+        }
+
+        $resData = $response->data->entity;
+        Log::info(["Dojah KYC Response" => $resData]);
 
         $base64Truncated = $resData->image;
         $base64 = "data:image/jpeg;base64," . $base64Truncated;
@@ -146,10 +181,30 @@ class DojahKycService
             'selfie_image_initiated'        => $resData->selfie_image_url
         ]);
 
-        return $this->setSuccessState(200, __("BVN validation successful"));
+        $this->setSuccessState(200, __("BVN validation successful"));
+        return $this;
     }   
 
 
+    public function throwResponse()
+    {
+
+         return $this->failstate ? $this->fail : tap($this->success, fn () => $this->callMetaPixel());
+    }
+
+
+    public function callMetaPixel() 
+    {
+        app(MetaPixelConversionService::class)
+                ->eventId($this->user->uuid)
+                ->eventName('KYC')
+                ->eventTime(time())
+                ->userData(email: $this->user->email, phone: $this->user->mobile,  customerIp: null, customerUserAgent: null, fbc: null, fbp: null)
+                ->customData(userId: $this->user->id, actionTaken: 'KYC Completion', segment: 'KYC', status: 'success')
+                ->eventSourceURL(env('APP_URL'))
+                ->actionSource('website')
+                ->sendToMeta();
+    }
 
     public function saveBase64Image(string $base64, string $folder = 'images')
     {
@@ -185,6 +240,7 @@ class DojahKycService
 
             $url = $params ? env('DOJAH_KYC_URL')  . '/' . $params : env('DOJAH_KYC_URL');
 
+            Log::info(["Dojah KYC url" => $url]);
             Log::error($url);
 
             try {
@@ -210,20 +266,23 @@ class DojahKycService
     public function setFailedState($status = 400, $title)
     {
         $this->failstate = true;
-        $this->fail = (object) [
+        return $this->fail = (object) [
             "status" => $status,
-            "title" => $title
+            "message" => $title
         ];
     }
     public function setSuccessState($status = 200, $title)
     {
-        $this->success = (object) [
+        return $this->success = (object) [
             "status" => $status,
-            "title" => $title
+            "message" => $title
         ];
     }
     public function getFailState()
     {
         return $this->failstate;
     }
+
+
+    
 }
