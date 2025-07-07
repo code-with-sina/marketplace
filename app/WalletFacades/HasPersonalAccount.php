@@ -58,6 +58,7 @@ trait HasPersonalAccount
 
         if ($response->statusCode === 200 || $response->statusCode === 202) {
             $accounts = $response->data;
+            Log::info(['personal account' => $response->data]);
             $this->customer->customerstatus()->first()->customer()->first()->personalaccount()->update([
                 'personalId'      => $accounts->data->id,
                 'personalType'    => $accounts->data->type,
@@ -98,6 +99,7 @@ trait HasPersonalAccount
 
         if ($response->statusCode === 200 || $response->statusCode === 202) {
             $nuban = $response->data;
+            Log::info(['personal account' => $response->data]);
             $this->customer->customerstatus()->first()->customer()->first()->personalaccount()->first()->virtualnuban()->create([
                 'nubanId'       =>  $nuban->data->id,
                 'nubanType'     =>  $nuban->data->type,
@@ -129,7 +131,7 @@ trait HasPersonalAccount
     {
         $allowedMethods = ['get', 'post', 'put', 'patch', 'delete'];
         if (!in_array($method, $allowedMethods)) {
-            throw new InvalidArgumentException("Invalid HTTP method: $method");
+            throw new \InvalidArgumentException("Invalid HTTP method: $method");
         }
 
         $url = $params == null ? env('ANCHOR_SANDBOX') . $endpoint : env('ANCHOR_SANDBOX') . $endpoint . '/' . $params;

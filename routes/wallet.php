@@ -105,6 +105,15 @@ Route::get('update-users-privilege',              [KycController::class, 'update
 Route::get('update-users-customers-account',              [KycController::class, 'updateUsercustomerAccount']);
 Route::get('get-users-email',              [KycController::class, 'getEmailCheck']);
 Route::get('insert-specific-users',              [KycController::class, 'updateUsers']);
+Route::get('fetch-declarations', [KycController::class, 'fetchUserProfile']);
+
+
+Route::get('update-customer-account', [KycController::class, 'updateCustomersAccounts']);
+
+
+Route::post('work-declarationing',                                                                         [KycController::class, 'workDeclarationAndWalletOnboardingTest']);
+
+Route::get('get-customers', [KycController::class, 'getAccountFromDate']);
 
 // Route::post('admin/get-external-approval',  [CustomersController::class, 'getExternalKycApprovalStatus']);
 // Route::post('admin/approve-external-kyc',   [CustomersController::class, 'approveExternalKycStatus']);

@@ -59,6 +59,7 @@ trait HasEscrowAccount
 
         if ($response->statusCode === 200 || $response->statusCode === 202) {
             $accounts = $response->data;
+            Log::info(['escrow account' => $response->data]);
             $this->customer->customerstatus()->first()->customer()->first()->escrowaccount()->update([
                 'escrowId'      => $accounts->data->id,
                 'escrowType'    => $accounts->data->type,
@@ -98,6 +99,7 @@ trait HasEscrowAccount
 
         if ($response->statusCode === 200 || $response->statusCode === 202) {
             $nuban = $response->data;
+            Log::info(['escrow account' => $response->data]);
             $this->customer->customerstatus()->first()->customer()->first()->escrowaccount()->first()->virtualnuban()->create([
                 'nubanId'       =>  $nuban->data->id,
                 'nubanType'     =>  $nuban->data->type,
@@ -129,7 +131,7 @@ trait HasEscrowAccount
     {
         $allowedMethods = ['get', 'post', 'put', 'patch', 'delete'];
         if (!in_array($method, $allowedMethods)) {
-            throw new InvalidArgumentException("Invalid HTTP method: $method");
+            throw new \InvalidArgumentException("Invalid HTTP method: $method");
         }
 
         $url = $params == null ? env('ANCHOR_SANDBOX') . $endpoint : env('ANCHOR_SANDBOX') . $endpoint . '/' . $params;

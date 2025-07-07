@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
+use App\Services\CreateEscrowAccountService;
+use App\Services\CreatePersonalAccountService;
 use App\Jobs\ProcessEscrowAccountJob;
 use App\Jobs\ProcessPersonalAccountJob;
 
@@ -47,7 +49,9 @@ class SubAccountService
         if ($this->statefulError) {
             return $this;
         }
-        dispatch(new ProcessEscrowAccountJob($this->user->uuid))->delay(now()->addSeconds(2));
+
+        app(CreateEscrowAccountService::class, ['uuid' => $this->user->uuid])
+            ->handleProcess();
         return $this;
     }
 
@@ -56,7 +60,9 @@ class SubAccountService
         if ($this->statefulError) {
             return $this;
         }
-        dispatch(new ProcessPersonalAccountJob($this->user->uuid))->delay(now()->addSeconds(2));
+
+        app(CreatePersonalAccountService::class, ['uuid' => $this->user->uuid])
+            ->handleProcess();
         return $this;
     }
 
