@@ -78,6 +78,10 @@ class RouteServiceProvider extends ServiceProvider
             Route::middleware('webhook')
                 ->prefix('webhook')
                 ->group(base_path('routes/webhook.php'));
+
+            Route::middleware('upcheck')
+                ->prefix('upcheck')
+                ->group(base_path('routes/upcheck.php'));
         });
     }
 }

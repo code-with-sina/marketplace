@@ -135,12 +135,6 @@ class KycController extends Controller
             return response()->json($processKYC, $processKYC->status);
 
         }
-
-
-        
-
-        
-
         
     }
 
@@ -168,7 +162,8 @@ class KycController extends Controller
         ]);
 
         if($user->kycdetail()->first()->selfie_verification_status === true || $user->kycdetail()->first()->selfie_verification_status === "true"){
-            $this->memberCreate(data: $user->kycdetail()->first());
+            $result = $this->memberCreate(data: $user->kycdetail()->first());
+            return $result;
         }else {
             return response()->json([
                 'message' => 'Please complete your KYC verification before proceeding with wallet onboarding.'
@@ -178,37 +173,59 @@ class KycController extends Controller
     }
 
 
+    public function fetchProfileTest(Request $request) {
+        $user = User::where('id', $request->id)->first();
+        $data = $user->kycdetail()->select([
+            'house_number',
+            'street',
+            'city',
+            'state',
+            'country',
+            'gender',
+            'zip_code'
+        ])->first();
 
-    public function workDeclarationAndWalletOnboardingTest(Request $request){
-        $validator = Validator::make($request->all(), [
-            'profession' => ['required', 'string'],
-            'group' => ['nullable', 'array'],
-            'group.*' => ['in:buyer,seller'],
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        $makeGroup = in_array('buyer', $request->group) && in_array('seller', $request->group) ? 'both' : $request->group[0] ?? null;
-
-        $user = User::find($request->user_id);
-        $user->works()->create([
-            'profession' => $request->profession,
-            'group' => $makeGroup,
-        ]);
-
-        if($user->kycdetail()->first()->selfie_verification_status === true || $user->kycdetail()->first()->selfie_verification_status === "true"){
-            $this->memberCreate(data: $user->kycdetail()->first());
-        }else {
-            return response()->json([
-                'message' => 'Please complete your KYC verification before proceeding with wallet onboarding.'
-            ], 422);
-            
-        }
+        return response()->json($data);
     }
+
+
+    public function fetchDeclarationTest(Request $request) {
+        $user = User::where('id', $request->id)->first();
+        $data = $user->works()->first();
+        return response()->json($data);
+    }
+
+
+
+    public function fetchProfile() {
+        $user = User::where('uuid', auth()->user()->uuid)->first();
+        $data = $user->kycdetail()->select([
+            'house_number',
+            'street',
+            'city',
+            'state',
+            'country',
+            'gender',
+            'zip_code'
+        ])->first();
+        if(!$data) {
+            return response()->json("sorry, you have no profile yet");
+        }
+
+        return response()->json($data);
+    }
+
+
+    public function fetchDeclaration() {
+        $user = User::where('uuid', auth()->user()->uuid)->first();
+        $data = $user->works()->first();
+
+        if(!$data) {
+            return response()->json("sorry, you have not declare what you do yet");
+        }
+        return response()->json($data);
+    }
+
 
     public function memberCreate($data) {
             
@@ -230,8 +247,7 @@ class KycController extends Controller
             ->throwStatus();
 
         return response()->json($statusResource, $statusResource->status);  
-        return response()->json($payload, 200);
-        
+
     }
 
 
@@ -347,139 +363,6 @@ class KycController extends Controller
     }
 
 
-    // public function updateUsercustomerAccount() {
-    //     $json = file_get_contents(resource_path('data/customers.json'));
-    //     $customers = json_decode($json, true);
-
-    //     $customerList = $customers['data'] ?? [];
-    //     $counts = $this->flattenCustomerData($customerList);
-
-    //     return response()->json([
-    //         'message' => 'Customer data successfully parsed and flattened',
-    //         'users' => $counts
-    //     ]);
-    // }
-
-    // public function flattenCustomerData($customerJson) {
-    //     $result = [];
-    //     foreach ($customerJson as $data) {
-    //         $flattened = [
-    //             'id' => $data['id'],
-    //             'type' => $data['type'],
-    //             'created_at' => $data['attributes']['createdAt'],
-    //             'phone_number' => $data['attributes']['phoneNumber'],
-    //             'address' => $data['attributes']['address']['addressLine_1'],
-    //             'country' => $data['attributes']['address']['country'],
-    //             'state' => $data['attributes']['address']['state'],
-    //             'city' => $data['attributes']['address']['city'],
-    //             'postal_code' => $data['attributes']['address']['postalCode'],
-    //             'sole_proprietor' => $data['attributes']['soleProprietor'],
-    //             'first_name' => $data['attributes']['fullName']['firstName'],
-    //             'last_name' => $data['attributes']['fullName']['lastName'],
-    //             'middle_name' => $data['attributes']['fullName']['middleName'],
-    //             'maiden_name' => $data['attributes']['fullName']['maidenName'],
-    //             'id_level3_type' => $data['attributes']['identificationLevel3']['idType'],
-    //             'id_level3_number' => $data['attributes']['identificationLevel3']['idNumber'],
-    //             'id_level3_expiry' => $data['attributes']['identificationLevel3']['expiryDate'],
-    //             'dob' => $data['attributes']['identificationLevel2']['dateOfBirth'],
-    //             'gender' => $data['attributes']['identificationLevel2']['gender'],
-    //             'bvn' => $data['attributes']['identificationLevel2']['bvn'],
-    //             'selfie' => $data['attributes']['identificationLevel2']['selfieImage'],
-    //             'email' => $data['attributes']['email'],
-    //             'verification_level' => $data['attributes']['verification']['level'],
-    //             'verification_status' => $data['attributes']['verification']['status'],
-    //             'verification_details' => $data['attributes']['verification']['details'],
-    //             'status' => $data['attributes']['status'],
-    //             'organization_id' => $data['relationships']['organization']['data']['id'],
-    //             'organization_type' => $data['relationships']['organization']['data']['type'],
-    //         ];
-
-    //         $users = User::where("email", $flattened['email'])->first();
-    //         $userCustomer = null;
-    //         $customerData = null;
-    //         if($users == null) {
-    //             $userCustomer = null;
-    //             $customerData = null;
-    //         }else {
-    //             $userCustomer = @$users->customerstatus()->first() ?? null;
-    //             if($userCustomer !== null) {
-                    
-    //                 $primitiveInitiatoryUserData = $users->customerstatus()->update([
-    //                     'user_id' => $users->id,
-    //                     'customerId' => $flattened['id'],
-    //                     'type' => $flattened['type'],
-    //                     'status' => $flattened['verification_status']
-    //                 ]);
-
-    //                  $completeUserDataCreated = $primitiveInitiatoryUserData->customer()->updateOrCreate([
-    //                     'customerId' => $flattened['id'],
-    //                     'customerType' => $flattened['type'],
-    //                     'soleProprietor' => $flattened['sole_proprietor'],
-    //                     'firstName' => $flattened['first_name'],
-    //                     'lastName' => $flattened['last_name'],
-    //                     'email' => $flattened['email'],
-    //                     'phoneNumber' => $flattened['phone_number'],
-    //                     'address' => $flattened['address'],
-    //                     'country' => $flattened['country'],
-    //                     'state' => $flattened['state'],
-    //                     'city' => $flattened['city'],
-    //                     'postalCode' => $flattened['postal_code'],
-    //                     'gender' => $flattened['gender'],
-    //                     'bvn' => $flattened['bvn'],
-    //                     'selfieImage' => $flattened['selfie'],
-    //                     'expiryDate' => $flattened['id_level3_expiry'],
-    //                     'idType' => $flattened['id_level3_type'],
-    //                     'idNumber' => $flattened['id_level3_number'],
-    //                     'status' => $flattened['status'],
-    //                     'registered' => Hash::make($flattened['status'] . '-' . uniqid())
-    //                 ]);
-
-                    
-    //               $customerData = $completeUserDataCreated;  
-    //             }else {
-    //                 $primitiveInitiatoryUserData = $users->customerstatus()->create([
-    //                     'user_id' => $users->id,
-    //                     'customerId' => $flattened['id'],
-    //                     'type' => $flattened['type'],
-    //                     'status' => $flattened['verification_status']
-    //                 ]);
-
-    //                 $completeUserDataCreated = $primitiveInitiatoryUserData->customer()->create([
-    //                     'customerId' => $flattened['id'],
-    //                     'customerType' => $flattened['type'],
-    //                     'soleProprietor' => $flattened['sole_proprietor'],
-    //                     'firstName' => $flattened['first_name'],
-    //                     'lastName' => $flattened['last_name'],
-    //                     'email' => $flattened['email'],
-    //                     'phoneNumber' => $flattened['phone_number'],
-    //                     'address' => $flattened['address'],
-    //                     'country' => $flattened['country'],
-    //                     'state' => $flattened['state'],
-    //                     'city' => $flattened['city'],
-    //                     'postalCode' => $flattened['postal_code'],
-    //                     'gender' => $flattened['gender'],
-    //                     'bvn' => $flattened['bvn'],
-    //                     'selfieImage' => $flattened['selfie'],
-    //                     'expiryDate' => $flattened['id_level3_expiry'],
-    //                     'idType' => $flattened['id_level3_type'],
-    //                     'idNumber' => $flattened['id_level3_number'],
-    //                     'status' => $flattened['status'],
-    //                     'registered' => Hash::make($flattened['status'] . '-' . uniqid())
-    //                 ]);
-
-                    
-    //               $customerData = $completeUserDataCreated;  
-    //             }
-    //         }
-
-    //         $result[] = [
-    //             'id' => $data['id'],
-    //             'details' => $customerData ?? [$flattened['email'],  @$customerData, $users]
-    //         ];
-    //     }
-
-    //     return $result;
-    // }
 
 
     public function updateUsercustomerAccount()
@@ -861,43 +744,28 @@ class KycController extends Controller
         $stuff = Customer::whereBetween('created_at', [Carbon::parse('2025-06-30 00:00:00'), now()])->get();
         foreach($stuff as $item) 
         {
-            // if($item->personalaccount()->first() === null && $item->escrowaccount()->first() === null) {
-            //     $user = User::where('email', $item->email)->first();
-            //     $user->authorization()->update(['kyc' => 'approved']);
-            //     $user->customerstatus()->update(['status' => 'fully-verified']);
-            //     app(SubAccountService::class)->validateUser($user->uuid)
-            //         ->validateUserKyc()
-            //         ->processEscrow()
-            //         ->processPersonal()
-            //         ->createSubAccount()
-            //         ->throwStatus(); 
-
-            //     $plots[] = ["userData" => ["customer" => $user]];
-            // }else {
-            //     $plots[] = ["userData" => ["account" => $item->personalaccount()->first() ?? null, "acounts" => $item->escrowaccount()->first() ?? null]];
-            // }
 
             if($item->personalaccount()->first() === null && $item->escrowaccount()->first() === null) 
             {
                 $userAccount = CustomerStatus::where('customerId', $item->customerId)->first();
-                if($userAccount->status === "fully-verified") 
-                {
+                // if($userAccount->status === "fully-verified") 
+                // {
                     
-                    $user = User::where('email', $userAccount->customer()->first()->email)->first();
-                    $user->authorization()->update(['kyc' => 'approved']);
-                    $user->customerstatus()->update(['status' => 'fully-verified']);
-                    app(SubAccountService::class)->validateUser($user->uuid)
-                        ->validateUserKyc()
-                        ->processEscrow()
-                        ->processPersonal()
-                        ->createSubAccount()
-                        ->throwStatus(); 
-                    $plots[] = ['accounts' => $userAccount];
-                    sleep(5);
-                }
+                //     $user = User::where('email', $userAccount->customer()->first()->email)->first();
+                //     $user->authorization()->update(['kyc' => 'approved']);
+                //     $user->customerstatus()->update(['status' => 'fully-verified']);
+                //     app(SubAccountService::class)->validateUser($user->uuid)
+                //         ->validateUserKyc()
+                //         ->processEscrow()
+                //         ->processPersonal()
+                //         ->createSubAccount()
+                //         ->throwStatus(); 
+                //     $plots[] = ['accounts' => $userAccount];
+                //     sleep(5);
+                // }
 
 
-                // $plots[] = ['accounts' => $item->escrowaccount()->first()];
+                $plots[] = ['accounts' => $userAccount];
                 
             }
 

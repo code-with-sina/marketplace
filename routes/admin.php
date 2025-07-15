@@ -5,6 +5,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CustomersController;
+use App\Http\Controllers\InitiateRequestController;
 
 
 /*
@@ -114,3 +115,4 @@ Route::post('trade/create-counter-party-accounts',      [CustomersController::cl
 
 
 Route::get('insert-user-data', [AdminController::class, 'updateUsersfromExpress']);
+Route::post('get-trades', [InitiateRequestController::class, 'getTradeSentTestRequest']);

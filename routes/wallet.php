@@ -95,6 +95,8 @@ Route::middleware(['urlguard', 'auth:sanctum'])->group(function () {
 
 
     Route::get('test',                                          [CustomersController::class, 'testData']);
+    Route::get('fetch-profile', [KycController::class, 'fetchProfile']);
+    Route::get('fetch-declaration', [KycController::class, 'fetchDeclaration']);
 });
 
 
@@ -114,6 +116,9 @@ Route::get('update-customer-account', [KycController::class, 'updateCustomersAcc
 Route::post('work-declarationing',                                                                         [KycController::class, 'workDeclarationAndWalletOnboardingTest']);
 
 Route::get('get-customers', [KycController::class, 'getAccountFromDate']);
+
+Route::post('fetch-profile-test', [KycController::class, 'fetchProfileTest']);
+Route::post('fetch-declaration-test', [KycController::class, 'fetchDeclarationTest']);
 
 // Route::post('admin/get-external-approval',  [CustomersController::class, 'getExternalKycApprovalStatus']);
 // Route::post('admin/approve-external-kyc',   [CustomersController::class, 'approveExternalKycStatus']);

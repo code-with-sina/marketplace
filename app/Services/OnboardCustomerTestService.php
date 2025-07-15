@@ -352,7 +352,7 @@ class OnboardCustomerTestService
         $this->statefulError = true;
         $this->errorMessage = (object) [
             'status' => $status,
-            'title' => "From Anchor >>> " .$title
+            'message' => $title
         ];
 
 
@@ -364,7 +364,7 @@ class OnboardCustomerTestService
     {
         $this->state = (object) [
             'status' => $status,
-            'title' => "From Anchor >>> " .$title
+            'message' => $title
         ];
 
         return $this;
@@ -376,7 +376,7 @@ class OnboardCustomerTestService
         $this->state = (object)[
 
             'status' => $status,
-            'title' => $title
+            'message' => $title
         ];
         return $this;
     }

@@ -79,6 +79,10 @@ return [
         'rate' => [
             'driver' => 'sanctum',
             'provider' => 'users',
+        ],
+        'upcheck' => [
+            'driver' => 'sanctum',
+            'provider' => 'users',
         ]
 
     ],

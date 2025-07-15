@@ -20,7 +20,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [env('FRONTEND_URL', 'http://localhost'), "https://market.ratefy.co", "http://localhost:5173", "https://*.ratefy.co"],
+    'allowed_origins' => [env('FRONTEND_URL', 'http://localhost'), "https://market.ratefy.co", "http://localhost:5173", "https://*.ratefy.co", "https://ratefy-git-development-mrfem1s-projects.vercel.app"],
 
     'allowed_origins_patterns' => [],
 

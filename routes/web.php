@@ -2,24 +2,7 @@
 
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
-use App\Mail\Verification;
-use App\Mail\Signup;
-use App\Mail\PasswordReset;
-use App\Mail\SuccessfulPasswordReset;
-use App\Mail\SecurityAlert;
-use App\Mail\AdminDisableOffer;
-use App\Mail\ReportTransaction;
-use App\Mail\AdminPauseOffer;
-use App\Mail\AcceptTradeRequest;
-use App\Mail\BalanceFundingUpdate;
-use App\Mail\BalanceWithdrawal;
-use App\Mail\OfferApproval;
-use App\Mail\OfferRejection;
-use App\Mail\RejectTradeRequest;
-use App\Mail\TradeCancellation;
-use App\Mail\TradeCompletionSuccess;
-use App\Mail\TradeRequest;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
+
 use Illuminate\Http\Request;
 
 /*

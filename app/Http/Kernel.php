@@ -120,6 +120,11 @@ class Kernel extends HttpKernel
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\ForceJsonResponse::class,
         ],
+
+        'upcheck'   => [
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \App\Http\Middleware\ForceJsonResponse::class,
+        ],
     ];
 
     /**

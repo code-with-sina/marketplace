@@ -2,14 +2,16 @@
 
 namespace App\Http\Controllers;
 
-
+use Carbon\Carbon;
 use App\Models\User;
 use App\Models\PToP;
 use App\Models\TradeRequest;
+use App\Models\Ewallet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TradeController;
+use App\Models\PaymentOption;
 use App\Services\BuyApprovalService;
 use App\Services\SellApprovalService;
 use App\Services\RejectTradeService;
@@ -243,5 +245,45 @@ class InitiateRequestController extends Controller
         $trade = app(TradeController::class);
         $data = $trade->holdFundAtTradeRequestInitiatedForInjection(amount: ($amount * $offerRate), regs: $ledgerKey,  walletName: $walletName, sellerId: $sellerId, itemFor: $itemFor, direction: 'incoming', state: 'withhold');
         return $data;
+    }
+
+
+    public function getTradeSentRequest() {
+        $authenticatedUser = auth()->user()->uuid;
+        $trade = TradeRequest::where(function($query) use($authenticatedUser)  {
+            $query->where("owner", $authenticatedUser);
+        })->where("status", "active")->whereDate('created_at', Carbon::today())
+        ->latest()
+        ->take(5)
+        ->get()
+        ->map(function ($trade) {
+            $trade->recipient =  User::where('uuid', $trade->recipient)->first();
+            $trade->cat = Ewallet::where('id', $trade->wallet_id)->first();
+            $trade->subcat = PaymentOption::where('id', $trade->item_id)->first();
+            return $trade;
+        });
+        
+        return response()->json($trade, 200);
+    }
+
+
+    public function getTradeSentTestRequest(Request $request) {
+        $userUuid = User::where('id', $request->id)->first();
+        $authenticatedUser = $userUuid->uuid;
+
+        $trades = TradeRequest::where(function($query) use($authenticatedUser)  {
+            $query->where("owner", $authenticatedUser)->orWhere("recipient", $authenticatedUser);
+        })->where("status", "active")->whereDate('created_at', Carbon::today())
+        ->latest()
+        ->take(5)
+        ->get()
+        ->map(function ($trade) {
+            $trade->recipient =  User::where('uuid', $trade->recipient)->first();
+            $trade->cat = Ewallet::where('id', $trade->wallet_id)->first();
+            $trade->subcat = PaymentOption::where('id', $trade->item_id)->first();
+            return $trade;
+        });
+
+        return response()->json($trades, 200);
     }
 }

@@ -68,4 +68,8 @@ Route::middleware(['urlguard', 'auth:sanctum'])->group(function () {
     Route::get('fetch-tranasction-history/{pageNumber}/{tradeIn?}/{type?}',                                 [ActivityController::class, 'controllAction'])->middleware(['emailVerifiedAuth', 'kycAuth', 'log.activity']);
     Route::get('fetch-tranasction-history/{uuid}/{pageNumber}',                                             [ActivityController::class, 'controllNextAction'])->middleware(['emailVerifiedAuth', 'kycAuth', 'log.activity']);
     Route::get('fetch-tranasction-status/{transferId}',                                                     [ActivityController::class, 'fetchTransactionStatus'])->middleware(['emailVerifiedAuth', 'kycAuth', 'log.activity']);
+
+
+    Route::get('get-sent-trade-request', [InitiateRequestController::class, 'getTradeSentRequest'])->middleware(['emailVerifiedAuth', 'kycAuth', 'log.activity']);
+
 });

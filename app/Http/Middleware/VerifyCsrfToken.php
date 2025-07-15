@@ -20,6 +20,7 @@ class VerifyCsrfToken extends Middleware
         'offers/*',
         'chat/*',
         'search/*',
-        'rate/*'
+        'rate/*',
+        'upcheck/*'
     ];
 }

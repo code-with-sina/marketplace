@@ -7,3 +7,5 @@ Route::middleware(['urlguard', 'auth:sanctum'])->group(function() {
 });
 
 
+Route::post('create-rate',                        [RateController::class, 'createRate']);
+

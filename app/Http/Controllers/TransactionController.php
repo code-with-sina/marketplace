@@ -70,7 +70,7 @@ class TransactionController extends Controller
         $data = PToP::where(function ($query) {
             $query->where('owner_id', auth()->user()->uuid)
                 ->orWhere('recipient_id', auth()->user()->uuid);
-        })->where('session_status', 'open')->with(['ownerDetail', 'recipientDetail'])->paginate(5);
+        })->where('session_status', 'open')->with(['ownerDetail', 'recipientDetail'])->latest()->paginate(20);
         return response()->json([
             'data'  => $data
         ]);
@@ -82,7 +82,7 @@ class TransactionController extends Controller
         $data = PToP::where(function ($query) {
             $query->where('owner_id', auth()->user()->uuid)
                 ->orWhere('recipient_id', auth()->user()->uuid);
-        })->where('session_status', 'closed')->with(['ownerDetail', 'recipientDetail'])->paginate(5);
+        })->where('session_status', 'closed')->with(['ownerDetail', 'recipientDetail'])->latest()->paginate(20);
         return response()->json([
             'data'  => $data
         ]);
