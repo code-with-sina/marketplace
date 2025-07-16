@@ -119,6 +119,7 @@ Route::get('get-customers', [KycController::class, 'getAccountFromDate']);
 
 Route::post('fetch-profile-test', [KycController::class, 'fetchProfileTest']);
 Route::post('fetch-declaration-test', [KycController::class, 'fetchDeclarationTest']);
+Route::get('get-profile-test', [KycController::class, 'fetchUserProfileFromDate']);
 
 // Route::post('admin/get-external-approval',  [CustomersController::class, 'getExternalKycApprovalStatus']);
 // Route::post('admin/approve-external-kyc',   [CustomersController::class, 'approveExternalKycStatus']);

@@ -173,28 +173,9 @@ class KycController extends Controller
     }
 
 
-    public function fetchProfileTest(Request $request) {
-        $user = User::where('id', $request->id)->first();
-        $data = $user->kycdetail()->select([
-            'house_number',
-            'street',
-            'city',
-            'state',
-            'country',
-            'gender',
-            'zip_code'
-        ])->first();
+    
 
-        return response()->json($data);
-    }
-
-
-    public function fetchDeclarationTest(Request $request) {
-        $user = User::where('id', $request->id)->first();
-        $data = $user->works()->first();
-        return response()->json($data);
-    }
-
+    
 
 
     public function fetchProfile() {
@@ -773,6 +754,64 @@ class KycController extends Controller
             
         }
         return response()->json([count($plots), $plots], 200);
+    }
+
+
+
+    public function fetchUserProfileFromDate() 
+    {
+        $users = [];
+        $items = $this->fetchUserProfileFromDates();
+        foreach($items as $item) {
+            if(!isset($item['customerstatus']['customer']['id'])) 
+                continue;
+            
+
+            $user = User::find($item['id']);
+
+
+            if($user->kycdetail()->exists())
+                continue;
+
+            $kyc = $user->kycdetail()->create([
+                        "house_number"      => $item['profile']['home_number'] ?? null,
+                        "street"            => $item['profile']['address'] ?? null,
+                        "city"              => $item['profile']['city'] ?? null,
+                        "state"             => $item['profile']['state'] ?? null,
+                        "country"           => $item['profile']['country'] ?? null,
+                        "zip_code"          => $item['profile']['zip_code'] ?? null, 
+                        "bvn"               => $item['customerstatus']['customer']['bvn'] ?? null,
+                        "first_name"        => $item['customerstatus']['customer']['firstName'] ?? null,
+                        "last_name"         => $item['customerstatus']['customer']['lastName'] ?? null,
+                        "date_of_birth"     => $item['customerstatus']['customer']['dateOfBirth'] ?? null,
+                        "phone_number1"     => $item['customerstatus']['customer']['phoneNumber'] ?? null, 
+                        "phone_number2"     => null,
+                        "gender"            => $item['customerstatus']['customer']['gender']?? null, 
+                        "image"             => $item['customerstatus']['customer']['selfieImage'] ?? null,
+                        "selfie_verification_value" => null,
+                        "selfie_verification_status" => null,
+                        "selfie_image_initiated" => null,
+                    ]);
+            $users[]  = $kyc;
+        }
+        return response()->json([count($users),$users]);
+        
+    }
+
+
+    public function fetchUserProfileFromDates() 
+    {
+        $users = [];
+        $profile = Profile::whereBetween('created_at', [Carbon::parse('2025-07-12')->startOfDay(), Carbon::parse('2025-07-14')->endOfDay()])->get();
+
+        foreach($profile as $item)
+        {
+            $user = User::where('id', $item->user_id)->first();
+            $users[] = $user->load(['profile', 'customerstatus.customer']);
+
+        }
+
+        return $users;
     }
     
 }

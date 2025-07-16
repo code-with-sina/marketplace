@@ -185,4 +185,9 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasOne(Work::class);
     }
+
+    public function whatsappstate(): HasOne
+    {
+        return $this->hasOne(WhatsAppState::class);
+    }
 }

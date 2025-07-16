@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\WebhookController;
+use App\Http\Controllers\WhatsAppController;
 use App\Http\Controllers\TransactionHookController;
 use Illuminate\Http\Request;
 
@@ -19,3 +20,4 @@ use Illuminate\Http\Request;
 
 Route::post('/get-anchor', [WebhookController::class, 'handle']);
 Route::post('/book-transfer/get-anchor', [TransactionHookController::class, 'handle']);
+Route::post('/green-api/webhook', [WhatsAppController::class, 'handle']);
