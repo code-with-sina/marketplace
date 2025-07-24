@@ -40,47 +40,60 @@ class WhatsappNotificationService
 
 
 
-    public function getUserStatusTest($id): mixed 
+    public function getUserStatus($id): mixed 
     {
         $user = User::where('id', $id)->first();
         if(!$user){
-            return response()->json('sorry we have no record of you', 404);
+            return (object)['message' => 'sorry we have no record of you',  'status' => 400];
         }
 
         if(@$user->whatsappstate()->first() === null) {
-            return response()->json('You are yet to verified your whatsapp number', 422);
+            return (object)['message' =>  'You are yet to verified your whatsapp number',  'status' => 400];
         }
 
         if(@$user->whatsappstate()->first() !== null && $user->whatsappstate()->first()->status === "unverified"){
-            return response()->json('You are yet to verified your whatsapp number, new customer', 422);
+            return (object)['message' => 'You are yet to verified your whatsapp number, new customer',  'status' => 400];
         } 
 
         $verified = $user->whatsappstate()->first();
-        return response()->json($verified);
+        return ['message' => $verified, 'status' => 200];
          
     }
 
 
 
-    public function getUserForVerificationTest($id, $optional_number)
+    public function getUserForVerification($id, $optional_number)
     {
         $user = User::where('id', $id)->first();
 
         if (!empty($optional_number)) {
-            $user->whatsappstate()->create([
-                'receiptId' => Str::uuid(),
-                'optional_whatsapp_number' => $optional_number
-            ]);
+            $user->whatsappstate()->updateOrCreate(
+                ['optional_whatsapp_number' => $optional_number],
+                [
+                    'receiptId' => Str::uuid(),
+                    
+                ]);
         } else {
-            $user->whatsappstate()->create([
-                'receiptId' => Str::uuid()
-            ]);
+            $user->whatsappstate()->updateOrCreate(
+                ['optional_whatsapp_number' => $optional_number],
+                [
+                    'receiptId' => Str::uuid(),
+                   
+                ]);
         }
 
-        $messageFromTemplate = "I am here to very my number. my name is " .$user->firstname. " and my email is " .$user->email;
+        $messageFromTemplate = 
+        <<<EOT
+        Hello Ratefy,
+        Transaction Notifications can be sent to this WhatsApp. I consent to that.
+        EOT;
 
-        $url = 'https://wa.me/'.$user->mobile.'?text=' . urlencode($messageFromTemplate);
-        return redirect($url); 
+
+
+        $mobile = "+2348132104428";
+
+        $url = 'https://wa.me/'.$mobile.'?text=' . urlencode($messageFromTemplate);
+        return (object)['statusMessage' =>  'You now eligible to be authorized', 'message' => $url, 'status' => 200]; 
     }
 
 

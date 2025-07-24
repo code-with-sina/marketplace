@@ -190,4 +190,9 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasOne(WhatsAppState::class);
     }
+
+    public function lastactivity(): HasOne 
+    {
+        return $this->hasOne(Activity::class)->latest();
+    }
 }

@@ -11,14 +11,17 @@ use Illuminate\Http\Request;
 use App\Events\Chat as Dialogue;
 use Illuminate\Http\UploadedFile;
 use App\Otp\ReleasePaymentOtp;
+use App\Models\UserOnlinePresence;
 use Illuminate\Support\Facades\Http;
 use App\Http\Controllers\TradeController;
 use App\Services\CancelTransactionService;
 use App\Services\PeerPayment;
+use App\Services\WhatsappNotificationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\File\File;
+use Illuminate\Support\Facades\Log;
 
 
 class ChatController extends Controller
@@ -55,6 +58,25 @@ class ChatController extends Controller
             auth()->user()->uuid === $request->sender
             && auth()->user()->uuid !== $request->receiver
         ) {
+            // $this->updatePresence(sessionId: $request->session, senderId: auth()->user()->uuid, receiverId: $request->receiver);
+            // $isOnline = $this->isUserOnlineInSession(sessionId: $request->session,  userId: $request->receiver);
+
+            // if (!$isOnline) {
+            //     $receiverUser = User::where('uuid', $request->receiver)->first();
+            //     $mobile = $receiverUser ? $this->resolveWhatsAppNumber($receiverUser) : null;
+            //     // $mobile = optional($receiverUser->whatsappstate()->where('status', 'verified')->first())->optional_number ?? $receiverUser->mobile;
+
+
+            //     if($mobile){
+            //         $message = "Hello, you have a pending message in the chat";
+            //         app(WhatsappNotificationService::class)->sendNotification(chatId: $mobile, message: $message);
+            //     }else {
+            //         Log::warning("Unable to send WhatsApp notification: No valid mobile for user {$request->receiver}");
+            //     }
+                
+                
+            // }
+
             broadcast(
                 new Dialogue(
                     acceptance: $request->acceptance,
@@ -399,5 +421,41 @@ class ChatController extends Controller
                 'title'     => "You are not authorized to see this transaction"
             ], 400);
         }
+    }
+
+
+    public function updatePresence($sessionId, $senderId, $receiverId)
+    {
+        $userId = auth()->id(); // current user
+
+        UserOnlinePresence::updateOrCreate(
+            ['session_id' => $sessionId, 'user_id' => $userId],
+            [
+                'sender_id' => $senderId,
+                'receiver_id' => $receiverId,
+                'last_seen_at' => now()
+            ]
+        );
+    }
+
+
+    public function isUserOnlineInSession($sessionId, $userId)
+    {
+        $presence = UserOnlinePresence::where('session_id', $sessionId)
+            ->where('user_id', $userId)
+            ->first();
+
+        return $presence && now()->diffInSeconds($presence->last_seen_at) < 120; // 2-minute window
+    }
+
+    public function resolveWhatsAppNumber(User $user): ?string
+    {
+        $whatsappState = $user->whatsappstate()->latest()->first();
+
+        if ($whatsappState && $whatsappState->status === 'verified') {
+            return $whatsappState->optional_number ?? $user->mobile;
+        }
+
+        return null;
     }
 }

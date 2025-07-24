@@ -28,7 +28,7 @@ class ProfileAuth
     public function getProfile()
     {
         $user = User::find(Auth::user()->id);
-        $profile = $user->profile()->first();
+        $profile = $user->kycdetail()->first();
 
         if ($profile !== null) {
             return 200;

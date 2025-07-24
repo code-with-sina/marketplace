@@ -181,7 +181,12 @@ class DojahKycService
             'selfie_image_initiated'        => $resData->selfie_image_url
         ]);
 
-        $this->user->authorization()->update(['kyc' => 'approved']);
+        $this->user->authorization()->update([
+            'kyc'       => 'approved',
+            'profile'   => 'has_profile'
+        ]);
+
+        
         $this->setSuccessState(200, __("BVN validation successful"));
         return $this;
     }   

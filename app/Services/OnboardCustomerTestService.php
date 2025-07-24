@@ -218,7 +218,7 @@ class OnboardCustomerTestService
 
     public function buildPayload(array $collections, string $selfieimage) 
     {
-        $profile = $this->user->profile()->first();
+        $profile = $this->user->kycdetail()->first();
         return (object) [
             'data' => [
                 'attributes'    => [
@@ -231,12 +231,12 @@ class OnboardCustomerTestService
                         'state'         => $profile->state,
                         'city'          => $profile->city,
                         'postalCode'    => $profile->zip_code,
-                        'addressLine_1'     =>  ($profile->home_number ?? null) . ' '.  $profile->address 
+                        'addressLine_1'     =>  ($profile->house_number ?? null) . ' '.  $profile->street 
                     ],
                     'identificationLevel2'  => [
                         'dateOfBirth'   => Carbon::parse($collections['dateOfBirth'])->format('Y-m-d'),
                         'selfieImage'   => $selfieimage,
-                        'gender'        => $profile->sex,
+                        'gender'        => $profile->gender,
                         'bvn'           => $collections['bvn']
                     ],
                     'identificationLevel3'  => [

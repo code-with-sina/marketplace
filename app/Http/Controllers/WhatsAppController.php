@@ -5,13 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Services\WhatsappNotificationService;
+use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response;
 
 
 class WhatsAppController extends Controller
 {
     
-    private const TOKEN = 'f0bc0330eddd4ec7992cfdc384485a48e60f2c72781f4ab481'; 
+    private const TOKEN = '7353866b0d014f1f86349165d0f5b9351e09a986821b440480'; 
 
     public function handle(Request $req, WhatsappNotificationService $verifier): Response
     {
@@ -50,5 +51,29 @@ class WhatsAppController extends Controller
         }
 
         return response('OK', 200);
+    }
+
+
+    public function getUserWhatsappStatus(WhatsappNotificationService $whatsapp)
+    {
+        $response = $whatsapp->getUserStatus(auth()->user()->id);
+
+        return response()->json($response->message, $response->status);
+    }
+
+
+    public function initiateWhatsappVerification(WhatsappNotificationService $whatsapp, Request $request) 
+    {
+        $validate = Validator::make($request->all(), [
+            'optional_number' => 'nullable|string|max:11'
+        ]);
+
+        if ($validate->fails()) {
+            return response()->json(['errors' => $validate->errors()], 422);
+        }
+
+        $response = $whatsapp->getUserForVerification(auth()->user()->id, $request->optional_number);
+
+        return response()->json($response, $response->status);
     }
 }

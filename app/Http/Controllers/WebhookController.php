@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\CustomerStatus;
 use App\Models\TransactionEvent;
 use App\Models\WithdrawalJournal;
+use App\Services\UpdateAccountService;
 use App\Services\WalletFeeService;
 use Illuminate\Support\Facades\Log;
 use App\Services\SubAccountService;
@@ -15,6 +16,7 @@ use App\Services\PostBuyRequestService;
 use App\Http\Controllers\MessengerController;
 use App\Services\PostBuyApprovalService;
 use App\Services\PostPeerPaymentService;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Sleep;
 
 class WebhookController extends Controller
@@ -44,6 +46,8 @@ class WebhookController extends Controller
             $this->updateApprovalSuccessStatus();
             $this->eventLogger(user: $this->user);
             Log::info(['approved', $this->user->authorization()->first()->kyc]);
+            $this->updateUserAccount($this->user->uuid);
+
         }
 
         if ($request->data['type'] === 'customer.identification.error') {
@@ -240,5 +244,18 @@ class WebhookController extends Controller
     public function transactionJournal()
     {
         //for all transaction journal 
+    }
+
+
+    public function updateUserAccount($uuid)
+    {
+        Sleep(10);
+        app(UpdateAccountService::class)
+        ->getUser(uuid: $uuid)
+        ->validateUserHasPersonalAccount()
+        ->validateUserHasEscrowAccount()
+        // ->fetchAccount()
+        ->setState()
+        ->updateAccount();
     }
 }

@@ -16,6 +16,8 @@ use Illuminate\Support\Carbon;
 use App\Prop\FeeDeterminantAid;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+
+use App\Services\GetBalanceService;
 use App\AdminFacades\HasObjectConverter;
 
 class TradeController extends Controller
@@ -255,88 +257,52 @@ class TradeController extends Controller
     {
         $props = User::find(auth()->user()->id);
         $user = $props->customerstatus()->first();
+        
+        if(!$user) {
+            return response()->json(['message' => 'You have not been onboraded yet', 'status' => 400], 400);
+        }else {
+            $customer = $user->customer()->first();
+            if(!$customer) 
+                return response()->json(['message' => 'You have not been onboraded yet', 'status' => 400], 400);
+            $response = app(GetBalanceService::class)
+            ->getPayload(accountType: "escrow", accountId: $customer, id: $props->id)
+            ->processPayload()
+            ->getBalance()
+            ->show();
 
-        $data = Http::withHeaders([
-            'accept' => 'application/json',
-            'content-type' => 'application/json',
-            'x-anchor-key' => env('ANCHOR_KEY'),
-        ])->get(env('ANCHOR_SANDBOX') . "accounts/balance/" . $user->customer()->first()->escrowaccount()->first()->escrowId . "?include=DepositAccount%2CIndividualCustomer%2CBusinessCustomer");
-
-        if ($data->status() == 200 || $data->status() == 202) {
-            $account = $data->object();
-            $balance = $user->customer()->first()->escrowaccount()->first()->escrowbalance()->first();
-            if ($balance == null || empty($balance)) {
-                $user->customer()->first()->escrowaccount()->first()->escrowbalance()->create([
-                    'uuid'              => $props->uuid,
-                    'availableBalance'  => ($account->data->availableBalance / 100),
-                    'ledgerBalance'     => ($account->data->ledgerBalance / 100),
-                    'hold'              => $account->data->hold,
-                    'pending'           => $account->data->pending,
-                ]);
-
-                $balance = $user->customer()->first()->escrowaccount()->first()->escrowbalance()->first();
-                return response()->json(['data'  => $balance]);
-            } else {
-                $user->customer()->first()->escrowaccount()->first()->escrowbalance()->update([
-                    'uuid'              => $props->uuid,
-                    'availableBalance'  => ($account->data->availableBalance / 100),
-                    'ledgerBalance'     => ($account->data->ledgerBalance / 100),
-                    'hold'              => $account->data->hold,
-                    'pending'           => $account->data->pending,
-                ]);
-
-                $balance = $user->customer()->first()->escrowaccount()->first()->escrowbalance()->first();
-                return response()->json(['data'  => $balance]);
-            }
-        } else {
-            return response()->json(['data'  => $data->object()]);
+            return response()->json($response, $response->status);
         }
+
+        
     }
 
 
-    public function fetchPersonalBalance(Request $request)
+    public function fetchPersonalBalance()
     {
-
         $props = User::find(auth()->user()->id);
-       
         $user = $props->customerstatus()->first();
+        
+        if(!$user) {
+            return response()->json(['message' => 'You have not been onboraded yet', 'status' => 400], 400);
+        }else {
+            $customer = $user->customer()->first();
+            if(!$customer) 
+                return response()->json(['message' => 'You have not been onboraded yet', 'status' => 400], 400);
+            $response = app(GetBalanceService::class)
+            ->getPayload(accountType: "personal", accountId: $customer, id: $props->id)
+            ->processPayload()
+            ->getBalance()
+            ->show();
 
-        $data = Http::withHeaders([
-            'accept' => 'application/json',
-            'content-type' => 'application/json',
-            'x-anchor-key' => env('ANCHOR_KEY'),
-        ])->get(env('ANCHOR_SANDBOX') . "accounts/balance/" . $user->customer()->first()->personalaccount()->first()->personalId . "?include=DepositAccount%2CIndividualCustomer%2CBusinessCustomer");
-
-        if ($data->status() == 200 || $data->status() == 202) {
-            $account = $data->object();
-            $balance = $user->customer()->first()->personalaccount()->first()->personalbalance()->first();
-            if ($balance == null || empty($balance)) {
-                $user->customer()->first()->personalaccount()->first()->personalbalance()->create([
-                    'uuid'              => $props->uuid,
-                    'availableBalance'  => ($account->data->availableBalance / 100),
-                    'ledgerBalance'     => ($account->data->ledgerBalance / 100),
-                    'hold'              => $account->data->hold,
-                    'pending'           => $account->data->pending,
-                ]);
-
-                $balance = $user->customer()->first()->personalaccount()->first()->personalbalance()->first();
-                return response()->json(['data'  => $balance]);
-            } else {
-                $user->customer()->first()->personalaccount()->first()->personalbalance()->update([
-                    'uuid'              => $props->uuid,
-                    'availableBalance'  => ($account->data->availableBalance / 100),
-                    'ledgerBalance'     => ($account->data->ledgerBalance / 100),
-                    'hold'              => $account->data->hold,
-                    'pending'           => $account->data->pending,
-                ]);
-
-                $balance = $user->customer()->first()->personalaccount()->first()->personalbalance()->first();
-                return response()->json(['data'  => $balance]);
-            }
-        } else {
-            return response()->json(['data'  => $data->object()]);
+            return response()->json($response, $response->status);
         }
+
+        
+        
     }
+
+
+    
 
     public function withdrawalHistory($account, $trnxObj)
     {

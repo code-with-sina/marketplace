@@ -29,9 +29,9 @@ Route::middleware(['urlguard', 'auth:sanctum'])->group(function () {
     Route::post('cancel-session',                       [ChatController::class, 'cancelSession'])->middleware(['emailVerifiedAuth', 'log.activity']);
     Route::post('complete-transaction',                 [ChatController::class, 'completeTransaction'])->middleware(['emailVerifiedAuth', 'log.activity']);
     Route::post('reinburse-seller',                     [ChatController::class, 'reinburseSeller'])->middleware(['emailVerifiedAuth', 'log.activity']);
-
-
     Route::post('otp-confirmation',                     [ChatController::class, 'confirmOtp'])->middleware(['emailVerifiedAuth', 'log.activity']);
     Route::post('resend-otp',                           [ChatController::class, 'resendOtp'])->middleware(['emailVerifiedAuth', 'log.activity']);
 
+
+    Route::post('/presence/update',                     [ChatController::class, 'updatePresence'])->middleware(['emailVerifiedAuth', 'log.activity']);
 });

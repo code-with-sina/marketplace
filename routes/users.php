@@ -4,6 +4,7 @@ use App\Http\Controllers\InsertController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WhatsAppController;
 
 /*
 |--------------------------------------------------------------------------
@@ -36,6 +37,8 @@ Route::middleware(['urlguard', 'auth:sanctum'])->group(function () {
     // Route::post('resend-verification-link',          [UserController::class, 'resendVerificationLink']);
 
     Route::post('resend-verification-link',         [UserController::class, 'resendVerifyLink']);
+    Route::get('get-whatsapp-status',         [WhatsAppController::class, 'getUserWhatsappStatus']);
+    Route::post('process-whatsapp-verification-link',         [WhatsAppController::class, 'initiateWhatsappVerification']);
 });
 
 

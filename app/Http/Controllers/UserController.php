@@ -19,7 +19,7 @@ class UserController extends Controller
     {
         $user = User::find(auth()->user()->id);
         return response()->json([
-            'data'      => $user->load(['authorization', 'activity', 'tag', 'miniprofile']),
+            'data'      => $user->load(['authorization', 'lastactivity', 'tag', 'miniprofile']),
         ], 200);
     }
 
@@ -113,15 +113,38 @@ class UserController extends Controller
 
     public function getStatus()
     {
-        $user = User::find(auth()->user()->id)->authorization()->first();
+
+        $authUser = auth()->user();
+        $user = User::find($authUser->id);
+
+        if(!$user)
+        {
+            return response()->json([
+                'message'   => 'User not found',
+                'status'    => 400
+            ], 400);
+    
+        }
+
+        $authorization = $user->authorization()->first();
+
+        if (!$authorization) {
+            return response()->json(['message' => 'Authorization not found'], 404);
+        }
+
+        $whatsapp = $user->whatsappstate()->first();
+        $whatsappState = $whatsapp?->status ?? 'unverified';
+
         $status = [
-            'profile'           => $user->profile,
-            'email'             => $user->email,
-            'kyc'               => $user->kyc,
-            'work-experience'   => $user->type
+            'profile'           => $authorization->profile,
+            'email'             => $authorization->email,
+            'kyc'               => $authorization->kyc,
+            'work-experience'   => $authorization->type,
+            'whatsapp'          => $whatsappState,
         ];
 
         return response()->json($status, 200);
+
     }
 
     public function confirmBroadcastAuth(Request $request)

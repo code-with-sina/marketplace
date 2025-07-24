@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use App\Services\OnboardCustomerService;
 use App\Services\BalanceService;
+use App\Models\CustomerStatus;
 
 
 class CustomersController extends Controller
@@ -147,7 +148,7 @@ class CustomersController extends Controller
 
             $validate = $this->validateKyc($user->customerstatus()->first()->customer()->first());
 
-            $this->notifyStaffs(direction: 'Kyc', content: $createCustomer . 'created on >>> ', id: $createCustomer->id);
+            // $this->notifyStaffs(direction: 'Kyc', content: $createCustomer . 'created on >>> ', id: $createCustomer->id);
 
             if ($validate === 200) {
                 $data  = $user->customerstatus()->first();
@@ -244,7 +245,7 @@ class CustomersController extends Controller
                 'registered'    => Hash::make($updateCustomers->data->attributes->status . '-' . uniqid())
             ]);
 
-            $validate = $this->validateKyc($upsertCustomer->customer()->first());
+            $validate = $this->validateKyc($updateCustomers->customer()->first());
 
             if ($validate === 200) {
                 $data = CustomerStatus::where('uuid', $user->uuid)->first();
@@ -411,8 +412,12 @@ class CustomersController extends Controller
     public function fetchWallet(Request $request)
     {
         $user = User::find(auth()->user()->id);
-
         $wallet = $user->customerstatus()->first();
+
+        if(!$wallet) {
+            return response()->json(['message' => 'You have not been onboraded yet', 'status' => 400], 400);
+        }
+
         return response()->json($wallet->load([
             'customer',
             'customer.escrowaccount',
@@ -427,19 +432,49 @@ class CustomersController extends Controller
     }
 
 
-    public function fetchExpositonAccount(Request $request)
+    public function fetchExpositonAccount()
     {
+        $accountDetail = null;
         $patron = User::find(auth()->user()->id);
         $user = $patron->customerstatus()->first();
-        return response()->json(['Personal account detail' => $user->customer()->first()->personalaccount()->first()->virtualnuban()->first(), 'Escrow account detail' => $user->customer()->first()->escrowaccount()->first()->virtualnuban()->first()]);
+        if($user !== null) {
+            $customerDetail = $user->customer()->first();
+            if($customerDetail !== null) {
+                $personalAccount = $customerDetail->personalaccount()->first();
+                $escrowAccount = $customerDetail->escrowaccount()->first();
+
+                $accountDetail= [
+                    "Personal account detail" => $personalAccount !== null ? $personalAccount->virtualnuban()->first() : "No Personal Account created yet",
+                    "Escrow account detail" => $escrowAccount !== null ? $escrowAccount->virtualnuban()->first() : "No Escrow Account created yet",
+                ];
+                
+            }
+            
+        }else {
+            return response()->json(['message' => "You have not been onborded yet", "status" => 404], 404);
+        }
+
+        return response()->json($accountDetail, 200);
     }
 
     public function getCounterPartyAccount(Request $request)
     {
+        $detail = null;
         $patron = User::find(auth()->user()->id);
         $accountDetail = $patron->customerstatus()->first();
+        if($accountDetail !== null) {
+            $customer = $accountDetail->customer()->first();
+            if($customer !== null) {
+                $detail = $customer->counterpartyaccount()->get();
+            }else {
+                return response()->json(["message" => "You have not been onboard yet", "status" => 404], 404);
+            }
+            
+        }else {
+            return response()->json(["message" => "You have not been onboard yet", "status" => 404], 404);
+        }
         return response()->json([
-            'detail'    => $accountDetail->customer()->first()->counterpartyaccount()->get(),
+            'detail'    => $detail
         ]);
     }
 
@@ -491,7 +526,7 @@ class CustomersController extends Controller
 
 
 
-    public function getTransactionHistory($customerId, $from, $to, $type, $direction)
+    public function getTransactionHistory($accountId, $customerId, $from, $to, $type, $direction)
     {
         $data = Http::withHeaders([
             'Content-Type' => 'application/json',
@@ -638,11 +673,6 @@ class CustomersController extends Controller
                 'status' => $withdrawalObject->data->attributes->status,
                 'trnx_ref'        => $withdrawalObject->data->id,
             ]);
-
-
-
-
-
 
             return response()->json($createTradeLog);
         } else {

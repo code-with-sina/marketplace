@@ -24,6 +24,11 @@ class FeeService
     private $amount;
     private $reference;
     private $sourceReference;
+
+
+    public $apiRef;
+    public $naration;
+    
     const SOURCE_ACCOUNT = "ESCROW";
     const DESTINATION_ACCOUNT = "ADMIN";
     const SOURCE_TYPE = "Debit";
@@ -173,7 +178,7 @@ class FeeService
     {
         $allowedMethods = ['get', 'post', 'put', 'patch', 'delete'];
         if (!in_array($method, $allowedMethods)) {
-            throw new InvalidArgumentException("Invalid HTTP method: $method");
+            throw new \InvalidArgumentException("Invalid HTTP method: $method");
         }
 
         $url = $params ? env('ANCHOR_SANDBOX') . $endpoint . '/' . $params : env('ANCHOR_SANDBOX') . $endpoint;
