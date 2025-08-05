@@ -24,6 +24,7 @@ use App\Services\KycCheckerService;
 use App\Services\SubAccountService;
 use Illuminate\Support\Facades\Hash;
 use App\Services\UpdateAccountService;
+use App\Services\OnboardingLogService;
 use Illuminate\Support\Facades\Validator;
 use App\Services\MetaPixelConversionService;
 use App\Services\OnboardCustomerTestService;
@@ -161,14 +162,24 @@ class KycController extends Controller
         $user = User::find(auth()->user()->id);
         
         if($user->kycdetail()->first()->selfie_verification_status === true || $user->kycdetail()->first()->selfie_verification_status === "true"){
-            $user->works()->create([
-                'profession' => $request->profession,
-                'group' => $makeGroup,
-            ]);
 
+            $works = $user->works()->first();
+                if(!$works){
+                    $user->works()->create([
+                        'profession' => $request->profession,
+                        'group' => $makeGroup,
+                    ]);
+                }else {
+                    $user->works()->update([
+                        'profession' => $request->profession,
+                        'group' => $makeGroup,
+                    ]);
+                }
+           
             $user->authorization()->update([
                 'type'       => 'both',
             ]);
+
             if($user->works()->first() !== null) {
                 $this->memberCreate(data: $user->kycdetail()->first());
                 return response()->json(["message" => "we are processing your wallet at the moment", "status" => 200], 200);
@@ -233,6 +244,13 @@ class KycController extends Controller
             ->monitorKycStatus()
             ->throwStatus();
 
+        OnboardingLogService::log(
+            auth()->user(), 
+            $statusResource->status == 200 ? "success": "failed",
+            "OnboardCustomerTestService",
+            (string)$statusResource->message,
+            $statusResource
+        );
         return response()->json($statusResource, $statusResource->status);  
 
     }
@@ -551,16 +569,10 @@ class KycController extends Controller
 
         if($user->kycdetail()->first()->selfie_verification_status === true 
             || $user->kycdetail()->first()->selfie_verification_status === "true"){
-                // $user->works()->create([
-                //     'profession' => $request->profession,
-                //     'group' => $makeGroup,
-                // ]);
-                // return response()->json($user->kycdetail()->first()->selfie_verification_status, 200);
-
                 
             $result = $this->memberCreateTest(data: $user->kycdetail()->first());
             return $result;
-            // return response()->json($user->kycdetail()->first(), 200);
+            
         }else {
             return response()->json([
                 'message' => 'Please complete your KYC verification before proceeding with wallet onboarding.'
@@ -589,6 +601,13 @@ class KycController extends Controller
             ->monitorKycStatus()
             ->throwStatus();
 
+        OnboardingLogService::log(
+            $user, 
+            $statusResource->status == 200 ? "success": "failed",
+            "OnboardCustomerTestService",
+            (string)$statusResource->message,
+            $statusResource
+        );
         return response()->json($statusResource, $statusResource->status);  
     }
 
@@ -727,6 +746,19 @@ class KycController extends Controller
     }
 
 
+    public function multipleAddVirtualNuban(Request $request) 
+    {
+        $ids = [];
+        foreach($request->id as $id){
+            $response = app(AddVirtualNubanService::class)
+            ->getVirtualNuban(id: $id)
+            ->createVirtualNuban()
+            ->show();
+            $ids[] = $response;
+        }   
+        return response()->json($ids);
+    }
+
     public function getUnupdatedVirtualnuban()
     {
         $local = [];
@@ -748,6 +780,33 @@ class KycController extends Controller
         }
 
         return response()->json([count($local), $local], 200);
+    }
+
+
+    public function getDepositAccountsForPersonal()
+    {
+        $virtualNuban = [];
+        $personalAccounts = PersonalAccount::whereBetween('created_at', [Carbon::parse('2025-03-15')->startOfDay(), now()])->get();
+
+        foreach($personalAccounts as $account)
+        {
+            $accounts = $account->virtualnuban()->first() ?? null;
+            if($accounts === null ) {
+                $customer = Customer::where('id', $account->customer_id)->first();
+                $status = CustomerStatus::where('id', $customer->customer_status_id)->first();
+                $virtualNuban[] = $status->user_id;
+            }
+        }
+
+        $uniqueUserIds = array_unique($virtualNuban);
+        return response()->json([count($uniqueUserIds), $uniqueUserIds]);
+    }
+
+
+    public function getDepostAccountsForEscrow() 
+    {
+        $escrowAccount = EscrowAccount::all();
+        return response()->json($escrowAccount);
     }
 
 

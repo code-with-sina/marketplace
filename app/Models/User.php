@@ -195,4 +195,10 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasOne(Activity::class)->latest();
     }
+
+
+    public function onboardinglog(): HasMany 
+    {
+        return $this->hasMany(OnboardingLog::class);
+    }
 }

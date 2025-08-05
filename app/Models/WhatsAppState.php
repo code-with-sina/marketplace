@@ -11,7 +11,7 @@ class WhatsAppState extends Model
     use HasFactory;
     protected $fillable = [
         'user_id',
-        'optional_number',
+        'optional_whatsapp_number',
         'status',
         'verified_at',
         'receiptId'

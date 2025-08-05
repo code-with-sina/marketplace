@@ -223,8 +223,8 @@ class OnboardCustomerTestService
             'data' => [
                 'attributes'    => [
                     'fullName'  => [
-                        'firstName' => $this->user->firstname,
-                        'lastName'  => $this->user->lastname
+                        'firstName' => $profile->first_name,
+                        'lastName'  => $profile->last_name
                     ],
                     'address'       => [
                         'country'       => self::COUNTRY,

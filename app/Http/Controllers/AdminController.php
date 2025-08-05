@@ -1175,8 +1175,6 @@ class AdminController extends Controller
                 $offer = $peertopeer->sellerOffer()->with(['ewallet', 'paymentoption'])->first();
             }
 
-
-
             return response()->json([
                 'Peer'  => $peertopeer->setRelation('offer', $offer)
             ]);

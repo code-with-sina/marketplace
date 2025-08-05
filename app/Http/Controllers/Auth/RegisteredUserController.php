@@ -25,6 +25,9 @@ use App\Services\MetaPixelConversionService;
 
 use App\UserFacades\HasUserFillable;
 
+
+use Illuminate\Support\Facades\Log;
+
 class RegisteredUserController extends Controller
 {
     use HasUserFillable, HasRegistrationValidation;
@@ -40,12 +43,13 @@ class RegisteredUserController extends Controller
         if ($request->header('User-Agents') !== 'Ratefy') {
             return response(['message' => 'bad header'], 400);
         } else {
+            Log::info(['mobile' => $request->mobile]);
             $validationParams = [
                 'firstname'              => $request->firstname ?? null,
                 'lastname'               => $request->lastname ?? null,
                 'username'               => $request->username ?? null,
                 'email'                  => $request->email ?? null,
-                'mobile'                 => '+234' . mb_substr($request->mobile, 1) ?? null,
+                'mobile'                 => $request->mobile ?? null,
                 'password'               => $request->password ?? null,
                 'password_confirmation'  => $request->password_confirmation ?? null,
                 'ip'                     => $request->ip ?? null,
@@ -64,7 +68,7 @@ class RegisteredUserController extends Controller
                     'lastname'      => $data['data']->lastname,
                     'username'      => $data['data']->username,
                     'email'         => $data['data']->email,
-                    'mobile'        => $data['data']->mobile,
+                    'mobile'        => '+234' .  substr($data['data']->mobile, 1) ?? null,
                     'uuid'          => Str::uuid(),
                     'password'      => Hash::make($data['data']->password),
                     'circulated'    => 'both'

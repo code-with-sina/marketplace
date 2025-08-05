@@ -6,6 +6,7 @@ namespace App\Services;
 use App\Models\PToP;
 use Illuminate\Support\Str;
 use App\Models\TradeRequest;
+use App\Models\ChatOnlinePresence;
 use App\Services\DebitService;
 use App\TradeFacades\HasCreatePeerToPeer;
 use Illuminate\Support\Facades\Validator;
@@ -173,6 +174,24 @@ class BuyApprovalService
     //     $this->setSuccessState(status: 200, title: __('Trade request approved successfully. You can proceed to transaction page'));
     //     return $this;
     // }
+
+
+    public function createPresence() 
+    {
+        if ($this->failstate) {
+            return $this;
+        }   
+        ChatOnlinePresence::create([
+            'owner_uuid'    => $this->trade->owner,
+            'recipient_uuid'    => $this->trade->recipient,
+            'session_id'        => $this->sessionId,
+            'owner_last_seen'   => now(),
+            'recipient_last_seen'   => now()
+        ]);
+
+        return $this;
+    }
+
 
     public function throwStatus()
     {

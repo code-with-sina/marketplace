@@ -6,6 +6,7 @@ use App\Models\Chat;
 use App\Models\PToP;
 use App\Events\Update;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Events\Chat as Dialogue;
@@ -14,6 +15,7 @@ use App\Otp\ReleasePaymentOtp;
 use App\Models\UserOnlinePresence;
 use Illuminate\Support\Facades\Http;
 use App\Http\Controllers\TradeController;
+use App\Models\ChatOnlinePresence;
 use App\Services\CancelTransactionService;
 use App\Services\PeerPayment;
 use App\Services\WhatsappNotificationService;
@@ -54,28 +56,13 @@ class ChatController extends Controller
             ], 422);
         }
 
+        $this->bufferOnline(session: $request->session,  receiverId: $request->receiver);
+
         if (
             auth()->user()->uuid === $request->sender
             && auth()->user()->uuid !== $request->receiver
         ) {
-            // $this->updatePresence(sessionId: $request->session, senderId: auth()->user()->uuid, receiverId: $request->receiver);
-            // $isOnline = $this->isUserOnlineInSession(sessionId: $request->session,  userId: $request->receiver);
-
-            // if (!$isOnline) {
-            //     $receiverUser = User::where('uuid', $request->receiver)->first();
-            //     $mobile = $receiverUser ? $this->resolveWhatsAppNumber($receiverUser) : null;
-            //     // $mobile = optional($receiverUser->whatsappstate()->where('status', 'verified')->first())->optional_number ?? $receiverUser->mobile;
-
-
-            //     if($mobile){
-            //         $message = "Hello, you have a pending message in the chat";
-            //         app(WhatsappNotificationService::class)->sendNotification(chatId: $mobile, message: $message);
-            //     }else {
-            //         Log::warning("Unable to send WhatsApp notification: No valid mobile for user {$request->receiver}");
-            //     }
-                
-                
-            // }
+            
 
             broadcast(
                 new Dialogue(
@@ -424,38 +411,80 @@ class ChatController extends Controller
     }
 
 
-    public function updatePresence($sessionId, $senderId, $receiverId)
+    public function updatePresence(Request $request)
     {
-        $userId = auth()->id(); // current user
 
-        UserOnlinePresence::updateOrCreate(
-            ['session_id' => $sessionId, 'user_id' => $userId],
-            [
-                'sender_id' => $senderId,
-                'receiver_id' => $receiverId,
-                'last_seen_at' => now()
-            ]
-        );
+        $getPosition = ChatOnlinePresence::where('session_id', $request->session_id)->first();
+        if($getPosition == null){
+            return null;
+        }else {
+            $getPosition->owner_uuid === auth()->user()->uuid ? $getPosition->update(['owner_last_seen' => now()]) : $getPosition->update(['recipient_last_seen' => now()]);
+        }
+        
+        
+
     }
 
 
     public function isUserOnlineInSession($sessionId, $userId)
     {
-        $presence = UserOnlinePresence::where('session_id', $sessionId)
-            ->where('user_id', $userId)
-            ->first();
+        
+        $presence = ChatOnlinePresence::where('session_id', $sessionId)->first();
+        if($presence !== null){
+            $lastSeen = $presence->owner_uuid === $userId ? $presence->owner_last_seen  : $presence->recipient_last_seen; 
 
-        return $presence && now()->diffInSeconds($presence->last_seen_at) < 120; // 2-minute window
+            if (!$lastSeen) {
+                return false; 
+            }
+
+            
+            return now()->diffInSeconds(Carbon::parse($lastSeen)) < 60;
+        }else {
+            return false;
+        }
+        
+
     }
 
     public function resolveWhatsAppNumber(User $user): ?string
     {
         $whatsappState = $user->whatsappstate()->latest()->first();
-
+        
         if ($whatsappState && $whatsappState->status === 'verified') {
             return $whatsappState->optional_number ?? $user->mobile;
         }
 
         return null;
+    }
+
+
+    public function bufferOnline($session, $receiverId): void 
+    {
+        $isOnline = $this->isUserOnlineInSession(sessionId: $session,  userId: $receiverId);
+
+        if (!$isOnline) {
+            $receiverUser = User::where('uuid', $receiverId)->first();
+            
+            $mobile = $this->resolveWhatsAppNumber($receiverUser);
+
+            
+            if($mobile){
+                // $message = "Hello, you have a pending message in the chat";
+                $message = 
+                <<<EOT
+                *Urgent:* New message on Ratefy — respond now via the transaction page.
+
+
+                *_#AutomatedMessage_*  
+                *_#NoReply_*
+                EOT;
+                
+                app(WhatsappNotificationService::class)->sendNotification(chatId: $mobile, message: $message);
+            }else {
+                Log::warning("Unable to send WhatsApp notification: No valid mobile for user {$receiverId}");
+            }
+            
+
+        }
     }
 }

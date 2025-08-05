@@ -15,19 +15,20 @@ class WhatsappNotificationService
 
     public function sendNotification(string $chatId, string $message): void
     {
+        $newChatId =  str_replace('+', '', $chatId);
         $payload = [
-            'chatId'    => $chatId.'@c.us',
+            'chatId'    => $newChatId.'@c.us',
             'message'   => $message
         ];
-
+         Log::info(['payload' => $payload]);
         $this->makeCallThrough($payload);
     }
 
     public function makeCallThrough($payload) 
     {
-        $url = env("WHATSAPP_API_URL")."/waInstance".env("WHATSAPP_ID_INSTANCE")."/sendMessage".env("WHATSAPP_API_TOKEN_INSTANCE");
+        $url = env("WHATSAPP_API_URL")."/waInstance".env("WHATSAPP_ID_INSTANCE")."/sendMessage/".env("WHATSAPP_API_TOKEN_INSTANCE");
         try{
-            Http::withHeaders([
+            $response = Http::withHeaders([
                 'accept' => 'application/json',
                 'content-type' => 'application/json',
             ])->post($url, $payload);
@@ -93,12 +94,15 @@ class WhatsappNotificationService
         $mobile = "+2348132104428";
 
         $url = 'https://wa.me/'.$mobile.'?text=' . urlencode($messageFromTemplate);
-        return (object)['statusMessage' =>  'You now eligible to be authorized', 'message' => $url, 'status' => 200]; 
+        return (object)['statusMessage' =>  'You are now eligible to be authorized', 'message' => $url, 'status' => 200]; 
     }
 
 
-    public function verifyUserWhatsappStateTest($mobile, $receiptId): mixed 
+    public function verifyUserWhatsappStateTest($mobileFromApi, $receiptId): mixed 
     {
+
+        $completeMobile = $this->removeCusSuffix($mobileFromApi);
+        $mobile = "+".$completeMobile;
         $user  = User::where('mobile', $mobile)->first();
 
 
@@ -141,5 +145,10 @@ class WhatsappNotificationService
             'message' => 'Mobile number not found.',
             'mobile' => $mobile
         ], 404);
+    }
+
+
+    function removeCusSuffix($whatsappId) {
+        return str_replace('@c.us', '', $whatsappId);
     }
 }

@@ -138,7 +138,7 @@ class UserController extends Controller
         $status = [
             'profile'           => $authorization->profile,
             'email'             => $authorization->email,
-            'kyc'               => $authorization->kyc,
+            'kyc'               => $authorization->kyc === "approved" && $authorization->type === "both" ? "approved" : "pending",
             'work-experience'   => $authorization->type,
             'whatsapp'          => $whatsappState,
         ];

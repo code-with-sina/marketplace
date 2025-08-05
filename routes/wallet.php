@@ -7,6 +7,7 @@ use App\Http\Controllers\TradeController;
 use App\Http\Controllers\CustomersController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\KycController;
+use App\Jobs\KycCheckJob;
 use App\Models\Kyc;
 
 
@@ -96,6 +97,12 @@ Route::get('get-kyc-user', [KycController::class, 'getKycAndUser']);
 Route::post('add-virtual-nuban', [KycController::class, 'addVirtualNubanAccount']);
 Route::get('get-un-updated-virtual-nuban', [KycController::class, 'getUnupdatedVirtualnuban']);
 
+
+
+
+Route::get('get-personal-accounts',  [KycController::class, 'getDepositAccountsForPersonal']);
+Route::get('get-escrow-accounts',  [KycController::class, 'getDepostAccountsForEscrow']);
+Route::post('multiple-post', [KycController::class, 'multipleAddVirtualNuban']);
 // Route::post('admin/get-external-approval',  [CustomersController::class, 'getExternalKycApprovalStatus']);
 // Route::post('admin/approve-external-kyc',   [CustomersController::class, 'approveExternalKycStatus']);
 

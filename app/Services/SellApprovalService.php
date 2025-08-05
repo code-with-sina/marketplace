@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Support\Str;
 use App\Models\TradeRequest;
 use App\Events\Chat as Dialogue;
+use App\Models\ChatOnlinePresence;
 use App\TradeFacades\HasCreatePeerToPeer;
 use Illuminate\Support\Facades\Validator;
 
@@ -129,10 +130,28 @@ class SellApprovalService
             receiver: "0eb8dc26-5a2a-403b-be04-58f3d659158c",
             admin: "0eb8dc26-5a2a-403b-be04-58f3d659158c",
             filename: null,
-            message: "This transaction is taking place on this day " . now()->format('d-m-y') . ", between [Party A: {$dBuyer->username}] and [Party B: {$dSeller->username}], for the sum of about ₦{$this->trade->amount_to_receive}.",
+            message: "The Naira payment for this transaction has been held. Stay polite. Be active & responsive.  Switch to 'order details' page (at the top right cornner to report any issue with this transaction.",
             contentType: 'text'
         ))->toOthers();
     
+        return $this;
+    }
+
+    public function createPresence() 
+    {
+        if ($this->failstate) 
+        {
+            return $this;
+        }
+
+        ChatOnlinePresence::create([
+            'owner_uuid'    => $this->trade->owner,
+            'recipient_uuid'    => $this->trade->recipient,
+            'session_id'        => $this->sessionId,
+            'owner_last_seen'   => now(),
+            'recipient_last_seen'   => now()
+        ]);
+
         return $this;
     }
 

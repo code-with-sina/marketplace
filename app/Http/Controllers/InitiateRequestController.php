@@ -66,6 +66,7 @@ class InitiateRequestController extends Controller
             ->validateNoPreviousTrade()
             ->validateBalance()
             ->debit()
+            ->createPresence()
             // ->processPeerToPeer()
             ->throwStatus();
 
@@ -95,6 +96,7 @@ class InitiateRequestController extends Controller
             ->validateNoPreviousTrade()
             ->processPeerToPeer()
             ->broadcastPeerToPeer()
+            ->createPresence()
             ->throwStatus();
 
         return response()->json($response, $response->status);

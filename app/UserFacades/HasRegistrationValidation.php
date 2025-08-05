@@ -20,7 +20,7 @@ trait HasRegistrationValidation
             'lastname'      =>  'required|string|max:255',
             'username'      =>  'required|string|unique:users,username',
             'email'         =>  'required|email|unique:users,email',
-            'mobile'        =>  'required|string|max:14|unique:users,mobile',
+            'mobile'        =>  ['required', 'string', 'min:11', 'max:11', 'unique:users,mobile'],
             'password'      =>  ['required', 'confirmed', Rules\Password::defaults()],
             'ip'            =>  'required|string',
             'device'        =>  'required|string'

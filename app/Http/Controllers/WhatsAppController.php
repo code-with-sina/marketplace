@@ -71,9 +71,22 @@ class WhatsAppController extends Controller
         if ($validate->fails()) {
             return response()->json(['errors' => $validate->errors()], 422);
         }
-
-        $response = $whatsapp->getUserForVerification(auth()->user()->id, $request->optional_number);
+        $mobile = $this->formatToInternational($request->optional_number);
+        $response = $whatsapp->getUserForVerification(auth()->user()->id, $mobile);
 
         return response()->json($response, $response->status);
+    }
+
+
+    function formatToInternational($mobile) {
+        // Remove any non-digit characters just in case
+        $mobile = preg_replace('/\D/', '', $mobile);
+
+        // Replace starting 0 with +234
+        if (preg_match('/^0\d{10}$/', $mobile)) {
+            return '+234' . substr($mobile, 1);
+        }
+
+        return $mobile; // return as-is if it doesn't match the expected local format
     }
 }
