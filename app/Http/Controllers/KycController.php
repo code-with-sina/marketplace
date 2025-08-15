@@ -249,7 +249,7 @@ class KycController extends Controller
             $statusResource->status == 200 ? "success": "failed",
             "OnboardCustomerTestService",
             (string)$statusResource->message,
-            $statusResource
+            (array)$statusResource
         );
         return response()->json($statusResource, $statusResource->status);  
 
@@ -606,7 +606,7 @@ class KycController extends Controller
             $statusResource->status == 200 ? "success": "failed",
             "OnboardCustomerTestService",
             (string)$statusResource->message,
-            $statusResource
+            (array)$statusResource
         );
         return response()->json($statusResource, $statusResource->status);  
     }

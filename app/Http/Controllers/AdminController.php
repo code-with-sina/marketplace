@@ -59,7 +59,8 @@ class AdminController extends Controller
     public function fetchTradeRequest()
     {
 
-        $trades = TradeRequest::where('end', '<',  now())
+        $trades = TradeRequest::whereBetween('created_at', [now()->subDays(5), now()])
+            ->where('status', 'active')
             ->orderBy('id', 'DESC')
             ->with(['charge', 'owner', 'recipient'])
             ->latest()

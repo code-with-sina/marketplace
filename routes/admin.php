@@ -4,6 +4,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\CustomersController;
 use App\Http\Controllers\InitiateRequestController;
 
@@ -116,3 +117,17 @@ Route::post('trade/create-counter-party-accounts',      [CustomersController::cl
 
 Route::get('insert-user-data', [AdminController::class, 'updateUsersfromExpress']);
 Route::post('get-trades', [InitiateRequestController::class, 'getTradeSentTestRequest']);
+
+
+
+Route::post('admin/registration', [AdminAuthController::class, 'register']);
+Route::post('admin/login', [AdminAuthController::class, 'login']);
+Route::post('admin/auth/token', [AdminAuthController::class, 'otpAuth']);
+Route::post('admin/create/admin', [AdminAuthController::class,'createAdmin'])->middleware('auth:sanctum');
+Route::post('/admin/logout', function (Request $request) {
+        $request->user()->currentAccessToken()->delete();   // revoke this device’s token
+        return response()->json(['message' => 'Logged out']);
+    })->middleware('auth:sanctum');
+Route::post('admin/forgot-password', [AdminAuthController::class, 'forgotPassword']);
+Route::post('admin/reset-password', [AdminAuthController::class, 'resetPassword'])->name('password.reset');
+Route::post('admin/change-password', [AdminAuthController::class, 'changePassword'])->middleware('auth:sanctum');

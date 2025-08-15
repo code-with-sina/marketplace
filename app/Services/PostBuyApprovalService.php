@@ -81,7 +81,7 @@ class PostBuyApprovalService
             receiver: "0eb8dc26-5a2a-403b-be04-58f3d659158c",
             admin: "0eb8dc26-5a2a-403b-be04-58f3d659158c",
             filename: null,
-            message: "The Naira payment for this transaction has been held. Stay polite. Be active & responsive.  Switch to 'order details' page (at the top right cornner to report any issue with this transaction.",
+            message: "The Naira payment for this transaction has been held. Stay polite. Be active & responsive.  Switch to 'order details' page (at the top right corner) to report any issue with this transaction.",
             contentType: 'text'
         ))->toOthers();
     
