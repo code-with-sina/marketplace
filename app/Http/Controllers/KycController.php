@@ -37,8 +37,6 @@ class KycController extends Controller
     public function kycGate(Request $request) {
         $probeKyc = @KycDetail::where('user_id', auth()->user()->id)->first();
         if($probeKyc !== null ) {
-           
-            
 
             if($probeKyc->selfie_verification_status !== null && $probeKyc->selfie_verification_status == true) {
                  return response()->json(["message"=> "User already verified", "status" => 200], 200);
@@ -118,7 +116,6 @@ class KycController extends Controller
             }
 
 
-
             $processKYC = app(DojahKycService::class)
             ->primitiveState(editState: false)
             ->getUserDetail(auth()->user()->uuid)
@@ -134,7 +131,6 @@ class KycController extends Controller
             ->savePrimitiveData()
             ->validateUserViaDojahKyc()
             ->throwResponse();
-
 
             return response()->json($processKYC, $processKYC->status);
 
@@ -237,21 +233,26 @@ class KycController extends Controller
         ];
 
         Log::info(["member create" => [$payload, $data]]);
-        $statusResource = app(OnboardCustomerTestService::class, ['user' => auth()->user()])
-            ->acquireUserDataAndValidate(edit: false)
-            ->createMember(collections: $payload, selfieimage: $data->image)
-            ->validateLevelOneKyc()
-            ->monitorKycStatus()
-            ->throwStatus();
 
-        OnboardingLogService::log(
-            auth()->user(), 
-            $statusResource->status == 200 ? "success": "failed",
-            "OnboardCustomerTestService",
-            (string)$statusResource->message,
-            (array)$statusResource
-        );
-        return response()->json($statusResource, $statusResource->status);  
+
+        dispatch()->job(new WalletStatusNotifier(
+            app(WalletStatusObserverAndNotifier::class), 
+            app(OnboardCustomerTestService::class,['user' => auth()->user()]), 
+            auth()->user(),
+            false
+            ));
+
+        // OnboardingLogService::log(
+        //     auth()->user(), 
+        //     $statusResource->status == 200 ? "success": "failed",
+        //     "OnboardCustomerTestService",
+        //     (string)$statusResource->message,
+        //     (array)$statusResource
+        // );
+        return response()->json((object)[
+            'message' => 'we are processing your wallet at the moment',
+            'status'  => 200
+        ], 200);
 
     }
 
@@ -594,21 +595,41 @@ class KycController extends Controller
 
         Log::info(["member create" => [$payload, $data]]);
         $user = User::find($data->user_id);
-        $statusResource = app(OnboardCustomerTestService::class, ['user' => $user])
-            ->acquireUserDataAndValidate(edit: false)
-            ->createMember(collections: $payload, selfieimage: $data->image)
-            ->validateLevelOneKyc()
-            ->monitorKycStatus()
-            ->throwStatus();
+        // $statusResource = app(OnboardCustomerTestService::class, ['user' => $user])
+        //     ->acquireUserDataAndValidate(edit: false)
+        //     ->createMember(collections: $payload, selfieimage: $data->image)
+        //     ->validateLevelOneKyc()
+        //     ->monitorKycStatus()
+        //     ->throwStatus();
 
-        OnboardingLogService::log(
-            $user, 
-            $statusResource->status == 200 ? "success": "failed",
-            "OnboardCustomerTestService",
-            (string)$statusResource->message,
-            (array)$statusResource
-        );
-        return response()->json($statusResource, $statusResource->status);  
+        // OnboardingLogService::log(
+        //     $user, 
+        //     $statusResource->status == 200 ? "success": "failed",
+        //     "OnboardCustomerTestService",
+        //     (string)$statusResource->message,
+        //     (array)$statusResource
+        // );
+        // return response()->json($statusResource, $statusResource->status);  
+
+
+        dispatch()->job(new WalletStatusNotifier(
+            app(WalletStatusObserverAndNotifier::class), 
+            app(OnboardCustomerTestService::class,['user' => $user]), 
+            $user,
+            false
+            ));
+
+        // OnboardingLogService::log(
+        //     auth()->user(), 
+        //     $statusResource->status == 200 ? "success": "failed",
+        //     "OnboardCustomerTestService",
+        //     (string)$statusResource->message,
+        //     (array)$statusResource
+        // );
+        return response()->json((object)[
+            'message' => 'we are processing your wallet at the moment',
+            'status'  => 200
+        ], 200);
     }
 
 

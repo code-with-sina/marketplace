@@ -52,7 +52,7 @@ class GetBalanceService
         $response = $this->makeRequest($this->processedPath);
 
         if(!in_array($response->statusCode, [200, 201, 202])) {
-            $this->setFailedState(status: 400, message: $response->message);
+            $this->setFailedState(status: 400, message: $response);
             return $this;
         }
 
