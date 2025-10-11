@@ -29,7 +29,8 @@ use Illuminate\Support\Facades\Validator;
 use App\Services\MetaPixelConversionService;
 use App\Services\OnboardCustomerTestService;
 use App\Services\AddVirtualNubanService;
-
+use App\Jobs\WalletStatusNotifier;  
+use App\Services\WalletStatusObserverAndNotifier;
 
 
 class KycController extends Controller
@@ -235,12 +236,21 @@ class KycController extends Controller
         Log::info(["member create" => [$payload, $data]]);
 
 
-        dispatch()->job(new WalletStatusNotifier(
+        // dispatch()->job(new WalletStatusNotifier(
+        //     app(WalletStatusObserverAndNotifier::class), 
+        //     app(OnboardCustomerTestService::class,['user' => auth()->user()]), 
+        //     auth()->user(),
+        //     false
+        //     ));
+
+        WalletStatusNotifier::dispatch(
             app(WalletStatusObserverAndNotifier::class), 
             app(OnboardCustomerTestService::class,['user' => auth()->user()]), 
+            $payload,
+            $data->image,
             auth()->user(),
             false
-            ));
+        )->onQueue('default')->delay(now()->addSeconds(10));
 
         // OnboardingLogService::log(
         //     auth()->user(), 
@@ -612,12 +622,21 @@ class KycController extends Controller
         // return response()->json($statusResource, $statusResource->status);  
 
 
-        dispatch()->job(new WalletStatusNotifier(
+        // dispatch()->job(new WalletStatusNotifier(
+        //     app(WalletStatusObserverAndNotifier::class), 
+        //     app(OnboardCustomerTestService::class,['user' => $user]), 
+        //     $user,
+        //     false
+        //     ));
+
+        WalletStatusNotifier::dispatch(
             app(WalletStatusObserverAndNotifier::class), 
             app(OnboardCustomerTestService::class,['user' => $user]), 
+            $payload,
+            $data->image,
             $user,
             false
-            ));
+        )->onQueue('default')->delay(now()->addSeconds(10));
 
         // OnboardingLogService::log(
         //     auth()->user(), 
@@ -767,6 +786,18 @@ class KycController extends Controller
     }
 
 
+    public function addVirtualNubanAccountToAuthUser(Request $request) 
+    {
+
+        $response = app(AddVirtualNubanService::class)
+        ->getVirtualNuban(id: auth()->user()->id)
+        ->createVirtualNuban()
+        ->show();
+
+        return response()->json($response, $response->status);
+    }
+
+
     public function multipleAddVirtualNuban(Request $request) 
     {
         $ids = [];
@@ -828,6 +859,33 @@ class KycController extends Controller
     {
         $escrowAccount = EscrowAccount::all();
         return response()->json($escrowAccount);
+    }
+
+
+    public function getKycDetailsForNow()
+    {
+        $j=1;
+        $from = Carbon::parse('2025-07-16 04:15:11');
+        $to = Carbon::now();
+        $result = ['user::'.$j => 0, 'action' => true];
+        $detail = KycDetail::whereBetween('created_at',[$from, $to])->where(function($query) {
+            $query->where('selfie_verification_status', true)->where('selfie_verification_value', '>=', 80);
+        })->get();
+
+
+        foreach($detail as $item){
+            $update  = User::where('id', $item->user_id)->update([
+                'firstname' => $item->first_name,
+                'lastname' => $item->last_name
+            ]);
+
+            if($update == 1) {
+                 $result['user::'.$j++] =  $item->user_id;
+                 $result['action']=  true;
+            }
+        }
+       
+        return response()->json($result);
     }
 
 

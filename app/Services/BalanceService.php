@@ -44,7 +44,7 @@ class BalanceService
         );
 
         if ($getBalance->statusCode !== 200) {
-            $this->setErrorState(status: 400, title: $getBalance->data->errors[0]->detail);
+                $this->setErrorState(status: 400, title: $getBalance->data->errors[0]->detail);
             return $this;
         }
 

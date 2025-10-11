@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use App\Services\OnboardCustomerService;
+use App\Services\AddVirtualNubanService;
+use App\Services\UpdateAccountService;
 use App\Services\BalanceService;
 use App\Models\CustomerStatus;
 
@@ -443,9 +445,37 @@ class CustomersController extends Controller
                 $personalAccount = $customerDetail->personalaccount()->first();
                 $escrowAccount = $customerDetail->escrowaccount()->first();
 
+                if($personalAccount == null || $escrowAccount == null){
+                    $updated = $this->updateUserSubAccount($patron->uuid);
+                    if($updated == 200){
+                        $this->addVirtualNubanAccountToAuthUser($patron->id);
+
+                        $accountDetail= [
+                            "Personal account detail" => $personalAccount !== null ? $personalAccount->virtualnuban()->first() : "No Personal Account created yet",
+                            "Escrow account detail" => $escrowAccount !== null ? $escrowAccount->virtualnuban()->first() : "No Escrow Account created yet",
+                            "personal" => $personalAccount->virtualnuban()->exists() ? "has_personal_wallet": "no_personal_wallet",
+                            "escrow" => $escrowAccount->virtualnuban()->first() ?? "No Escrow Account created yet",
+                        ];
+                    }
+                }
+
+
+                //check for virtual nuban account
+                if(!$personalAccount->virtualnuban()->exists()) {
+                    $this->addVirtualNubanAccountToAuthUser($patron->id);
+                    $accountDetail= [
+                        "Personal account detail" => $personalAccount !== null ? $personalAccount->virtualnuban()->first() : "No Personal Account created yet",
+                        "Escrow account detail" => $escrowAccount !== null ? $escrowAccount->virtualnuban()->first() : "No Escrow Account created yet",
+                        "personal" => $personalAccount->virtualnuban()->exists() ? "has_personal_wallet": "no_personal_wallet",
+                        "escrow" => $escrowAccount->virtualnuban()->first() ?? "No Escrow Account created yet",
+                    ];
+                }
+
                 $accountDetail= [
                     "Personal account detail" => $personalAccount !== null ? $personalAccount->virtualnuban()->first() : "No Personal Account created yet",
                     "Escrow account detail" => $escrowAccount !== null ? $escrowAccount->virtualnuban()->first() : "No Escrow Account created yet",
+                    "personal" => $personalAccount->virtualnuban()->exists() ? "has_personal_wallet": "no_personal_wallet",
+                    "escrow" => $escrowAccount->virtualnuban()->first() ?? "No Escrow Account created yet",
                 ];
                 
             }
@@ -456,6 +486,36 @@ class CustomersController extends Controller
 
         return response()->json($accountDetail, 200);
     }
+
+
+    public function addVirtualNubanAccountToAuthUser($id) 
+    {
+
+        $response = app(AddVirtualNubanService::class)
+        ->getVirtualNuban(id: $id)
+        ->createVirtualNuban()
+        ->show();
+
+        return response()->json($response, $response->status);
+    }
+
+    public function updateUserSubAccount($uuid) {
+        
+
+
+        
+
+        $response = app(UpdateAccountService::class)
+            ->getUser(uuid: $uuid)
+            ->validateUserHasPersonalAccount()
+            ->validateUserHasEscrowAccount()
+            // ->fetchAccount()
+            ->setState()
+            ->updateAccount();
+
+        return $response->status;
+    }
+
 
     public function getCounterPartyAccount(Request $request)
     {

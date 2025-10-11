@@ -175,17 +175,24 @@ class DojahKycService
             'phone_number2'                 => $resData->phone_number2,
             'gender'                        => $resData->gender,
             'date_of_birth'                 => $resData->date_of_birth,
-            'image'                         => $initialImage, 
+            'image'                         => "https://p2p.ratefy.co/".$initialImage, 
             'selfie_verification_value'     => $resData->selfie_verification->confidence_value,
             'selfie_verification_status'    => $resData->selfie_verification->match,
             'selfie_image_initiated'        => $resData->selfie_image_url
         ]);
+
+        
 
         $this->user->authorization()->update([
             'kyc'       => 'approved',
             'profile'   => 'has_profile'
         ]);
 
+
+        $this->user()->update([
+            'firstname' => $resData->first_name,
+            'lastname'  => $resData->last_name
+        ]);
         
         $this->setSuccessState(200, __("BVN validation successful"));
         return $this;

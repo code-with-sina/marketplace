@@ -63,6 +63,8 @@ Route::middleware(['urlguard', 'auth:sanctum'])->group(function () {
     Route::get('test',                                          [CustomersController::class, 'testData']);
     Route::get('fetch-profile', [KycController::class, 'fetchProfile']);
     Route::get('fetch-declaration', [KycController::class, 'fetchDeclaration']);
+
+    Route::post('add-user-virtual-nuban', [KycController::class, 'addVirtualNubanAccountToAuthUser']);
 });
 
 
@@ -117,3 +119,5 @@ Route::post('multiple-post', [KycController::class, 'multipleAddVirtualNuban']);
 // Route::post('admin/get-image',                                  [AdministratorController::class, 'getUserImage']);
 // Route::post('admin/complete-transaction',                       [AdministratorController::class, 'adminCompleteTransaction']);
 // Route::post('admin/cancel-transaction',                         [AdministratorController::class, 'adminCancelTransaction']);
+
+Route::get('get-kyc-detail', [KycController::class, 'getKycDetailsForNow']);

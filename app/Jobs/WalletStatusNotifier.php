@@ -9,6 +9,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Services\WalletStatusObserverAndNotifier;
+use App\Services\OnboardCustomerTestService;
 
 class WalletStatusNotifier implements ShouldQueue
 {
@@ -16,12 +17,17 @@ class WalletStatusNotifier implements ShouldQueue
 
     protected $user;
     protected $status;
+    protected $payload;
+    protected $selfieImage;
     /**
      * Create a new job instance.
      */
-    public function __construct(protected WalletStatusObserverAndNotifier $service, protected OnboardCustomerTestService $onboarding,  $user, $status)
+    public function __construct(protected WalletStatusObserverAndNotifier $service, protected OnboardCustomerTestService $onboarding, $payload, $image,  $user, $status)
     {
         $this->user = $user;
+        $this->status = $status;
+        $this->payload = $payload;
+        $this->selfieImage = $image;
     }
 
 
@@ -37,7 +43,7 @@ class WalletStatusNotifier implements ShouldQueue
         //     ->monitorKycStatus()
         //     ->throwStatus();
         $this->onboarding->acquireUserDataAndValidate(edit: $this->status)
-            ->createMember()
+            ->createMember(collections: $this->payload, selfieimage: $this->selfieImage)
             ->validateLevelOneKyc()
             ->monitorKycStatus()
             ->throwStatus();

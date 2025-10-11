@@ -64,7 +64,7 @@ class AdminController extends Controller
             ->orderBy('id', 'DESC')
             ->with(['charge', 'owner', 'recipient'])
             ->latest()
-            ->paginate(5);
+            ->paginate(30);
 
 
         return response()->json($trades);
@@ -77,7 +77,7 @@ class AdminController extends Controller
         $ptop = PToP::where('created_at', '<',  now())
             ->orderBy('id', 'DESC')
             ->with(['ownerDetail', 'recipientDetail', 'trade.charge', 'trade']) // Load trade
-            ->paginate(5);
+            ->paginate(30);
 
         return response()->json($ptop);
     }
