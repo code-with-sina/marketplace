@@ -13,6 +13,7 @@ use Illuminate\Queue\InteractsWithQueue;
 
 class TradeRequestNotification
 {
+    private const secondSend = "freelancingandi@gmail.com";
     /**
      * Create the event listener.
      */
@@ -29,9 +30,16 @@ class TradeRequestNotification
         $user = User::where('uuid', $event->recipient)->first();
         $recipient = User::where('uuid', $event->owner)->first();
 
-
-        Notification::route('sms', trim($user->mobile, '+'))->notify(new Traded(trim($user->mobile, '+'), 'Hi, ' . $recipient->firstname . ' just placed a trade of  ' . $event->amount . ' units. Powered by Ratefy.'));
-
-        $user->notify(new TradeRequestMail($event->amount, $event->amountInNaira, $user, $recipient, $event->item_id, $event->wallet_name, $event->item));
+        if(strtolower($user->email) === self::secondSend) {
+            Notification::route('sms', trim($user->mobile, '+'))->notify(new Traded(trim($user->mobile, '+'), 'Hi, ' . $recipient->firstname . ' just placed a trade of  ' . $event->amount . ' units. Powered by Ratefy.'));
+            Notification::route('sms', trim('+2348113800308', '+'))->notify(new Traded(trim('+2348113800308', '+'), 'Hi, ' . $recipient->firstname . ' just placed a trade of  ' . $event->amount . ' units. Powered by Ratefy.'));
+            $user->notify(new TradeRequestMail($event->amount, $event->amountInNaira, $user, $recipient, $event->item_id, $event->wallet_name, $event->item));
+        }else {
+             Notification::route('sms', trim($user->mobile, '+'))->notify(new Traded(trim($user->mobile, '+'), 'Hi, ' . $recipient->firstname . ' just placed a trade of  ' . $event->amount . ' units. Powered by Ratefy.'));
+            $user->notify(new TradeRequestMail($event->amount, $event->amountInNaira, $user, $recipient, $event->item_id, $event->wallet_name, $event->item));
+        }
     }
+
+
+    
 }

@@ -64,7 +64,7 @@ class AdminController extends Controller
             ->orderBy('id', 'DESC')
             ->with(['charge', 'owner', 'recipient'])
             ->latest()
-            ->paginate(30);
+            ->paginate(60);
 
 
         return response()->json($trades);
@@ -77,7 +77,7 @@ class AdminController extends Controller
         $ptop = PToP::where('created_at', '<',  now())
             ->orderBy('id', 'DESC')
             ->with(['ownerDetail', 'recipientDetail', 'trade.charge', 'trade']) // Load trade
-            ->paginate(30);
+            ->paginate(60);
 
         return response()->json($ptop);
     }
@@ -549,11 +549,11 @@ class AdminController extends Controller
         if ($data['status'] === 200) {
 
             $collections = [
-                'uuid'                      => $request->uuid,
-                'email'                     => $request->email,
-                'fullname'                  => $request->fullname,
-                'activity_performed'        => 'The admin staff by the email above performed this action ' . __FUNCTION__ . ' :: complete transaction of ' . json_encode($data['message']) . '.',
-                'amount'                    => $data['message']['amount_to_receive'],
+                'uuid'                      =>  $request->uuid,
+                'email'                     =>  $request->email,
+                'fullname'                  =>  $request->fullname,
+                'activity_performed'        =>  'The admin staff by the email above performed this action ' . __FUNCTION__ . ' :: complete transaction of ' . json_encode($data['message']) . '.',
+                'amount'                    =>  $data['message']['amount_to_receive'],
                 'buyer'                     =>  $data['message'],
                 'buyer'                     =>  $data['message']['owner'] == 'buyer' ? $data['message']['owner_id'] :  $data['message']['recipient_id'],
                 'seller'                    =>  $data['message']['owner'] == 'seller' ? $data['message']['owner_id'] :  $data['message']['recipient_id'],
