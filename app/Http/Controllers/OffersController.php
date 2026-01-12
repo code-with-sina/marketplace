@@ -351,7 +351,7 @@ class OffersController extends Controller
 
     public function filterEwallet()
     {
-        $data = Ewallet::all();
+        $data = Ewallet::where('status', 'active')->get();
         if ($data->isEmpty()) {
             return response()->json([
                 'data' => 'ewallet not available. You can always request for this ewallet via... \'http://api\request-ewallet\' '

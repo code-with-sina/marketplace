@@ -50,6 +50,7 @@ class KycController extends Controller
                     'state' => $this->splitState($request->state),
                     'house_number' => $request->house_number,
                     'zip_code' => $request->zip_code,
+                    'nin' => $request->nin,
                 ], [
                     'bvn' => ['required', 'digits:11'],
                     'selfie_image' => ['required', function ($attribute, $value, $fail) {
@@ -62,6 +63,7 @@ class KycController extends Controller
                     'state' => ['required', 'string'],
                     'house_number' => ['required', 'string'],
                     'zip_code' => ['nullable', 'string', 'max:6'],
+                    'nin' => ['required', 'digits:11']
                 ]);
 
                 if ($validator->fails()) {
@@ -79,7 +81,8 @@ class KycController extends Controller
                     city: $request->city,
                     state: $this->splitState($request->state),
                     house_number: $request->house_number,
-                    zip_code: $request->zip_code
+                    zip_code: $request->zip_code,
+                    nin: $request->nin
                 )
                 ->savePrimitiveData()
                 ->validateUserViaDojahKyc()
@@ -98,6 +101,7 @@ class KycController extends Controller
                 'state' => $this->splitState($request->state),
                 'house_number' => $request->house_number,
                 'zip_code' => $request->zip_code,
+                'nin' => $request->nin,
             ], [
                 'bvn' => ['required', 'digits:11', 'unique:kyc_details,bvn'],
                 'selfie_image' => ['required', function ($attribute, $value, $fail) {
@@ -110,6 +114,7 @@ class KycController extends Controller
                 'state' => ['required', 'string'],
                 'house_number' => ['required', 'string'],
                 'zip_code' => ['nullable', 'string', 'max:6'],
+                'nin' => ['required', 'digits:11']
             ]);
             
             if ($validator->fails()) {
@@ -127,7 +132,8 @@ class KycController extends Controller
                 city: $request->city,
                 state: $this->splitState($request->state),
                 house_number: $request->house_number,
-                zip_code: $request->zip_code
+                zip_code: $request->zip_code,
+                nin: $request->nin
             )
             ->savePrimitiveData()
             ->validateUserViaDojahKyc()
@@ -201,7 +207,9 @@ class KycController extends Controller
             'state',
             'country',
             'gender',
-            'zip_code'
+            'zip_code',
+            'selfie_image_initiated',
+            'nin'
         ])->first();
         if(!$data) {
             return response()->json("sorry, you have no profile yet");
@@ -227,7 +235,7 @@ class KycController extends Controller
         $payload = [
             "dateOfBirth"   => $data->date_of_birth,
             "bvn"           => $data->bvn,
-            "idNumber"      => "00000000000",
+            "idNumber"      => $data->nin ?? '00000000000',
             "idType"        => "NIN_SLIP",
             "gender"        => $data->gender,
             "expiryDate"    => "2025-12-12",
@@ -247,7 +255,7 @@ class KycController extends Controller
             app(WalletStatusObserverAndNotifier::class), 
             app(OnboardCustomerTestService::class,['user' => auth()->user()]), 
             $payload,
-            $data->image,
+            $data->selfie_image_initiated,
             auth()->user(),
             false
         )->onQueue('default')->delay(now()->addSeconds(10));

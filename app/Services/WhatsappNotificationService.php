@@ -20,7 +20,8 @@ class WhatsappNotificationService
             'chatId'    => $newChatId.'@c.us',
             'message'   => $message
         ];
-         Log::info(['payload' => $payload]);
+        
+        Log::info(['payload' => $payload]);
         $this->makeCallThrough($payload);
     }
 

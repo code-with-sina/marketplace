@@ -12,6 +12,7 @@ use App\Models\SellerOffer;
 use Illuminate\Http\Request;
 use App\Models\PaymentOption;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 
@@ -32,14 +33,24 @@ class SearchController extends Controller
         if ($validation->fails()) {
             return response()->json(['message' => $validation->errors()->first()], 400);
         } else {
+
+            $authUserId = Auth::id();
             $rate = Rate::latest()->first();
             $data = Ewallet::find($ewallet_id);
             $result = $data->selleroffer()
                 ->where('payment_option_id', $payment_option_id)
                 ->where('approval', 'pending')
                 ->where('status', 'active')
+                ->when(
+                    $data->id == '22' && in_array($payment_option_id, ['48', '52']), 
+                    function ($query) use ($authUserId) {
+                        if ($authUserId != 7919) {
+                            $query->where('user_id', '!=', ['7919']);
+                        }
+                    }
+                ) 
                 ->selectRaw("*, COALESCE(percentage * ?, fixed_rate) as ranking_score", [$rate->rate_normal])
-                ->orderBy('ranking_score', 'desc')
+                ->orderBy('ranking_score', 'asc')
                 ->with(['sellerofferrequirement.requirement', 'sellerterm', 'user'])
                 ->paginate(20);
 

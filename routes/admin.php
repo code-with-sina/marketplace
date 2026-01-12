@@ -131,3 +131,5 @@ Route::post('/admin/logout', function (Request $request) {
 Route::post('admin/forgot-password', [AdminAuthController::class, 'forgotPassword']);
 Route::post('admin/reset-password', [AdminAuthController::class, 'resetPassword'])->name('password.reset');
 Route::post('admin/change-password', [AdminAuthController::class, 'changePassword'])->middleware('auth:sanctum');
+Route::post('admin/create-user-counter-party-account', [AdminController::class, 'createCounterPartyAccount']);
+Route::get('emailing-list', [AdminController::class, 'allUsersForMailing']);

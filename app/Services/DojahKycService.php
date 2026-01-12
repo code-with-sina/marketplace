@@ -38,7 +38,7 @@ class DojahKycService
     }
 
 
-    public function getValidationDetails($bvn, $selfieImage, $street, $city, $state,  $house_number, $zip_code) 
+    public function getValidationDetails($bvn, $selfieImage, $street, $city, $state,  $house_number, $zip_code, $nin) 
     {
         if (!$this->user) {
             $this->setFailedState(status: 400, title: __("Sorry, We couldn't find the user"));
@@ -80,6 +80,11 @@ class DojahKycService
             return $this;
         }
 
+
+        if(!$nin) {
+             $this->setFailedState(status: 400, title: __("Sorry, no nin added"));
+            return $this;
+        }
        
 
         $this->kycData = new \stdClass();
@@ -92,6 +97,7 @@ class DojahKycService
         $this->kycData->country = "NG"; // Default country set to Nigeria
         $this->kycData->house_number = $house_number;
         $this->kycData->zip_code = $zip_code;
+        $this->kycData->nin = $nin;
 
         return $this;
     }
@@ -103,6 +109,8 @@ class DojahKycService
         if ($this->failstate)
             return $this;
 
+        $initialLocalImage = $this->cookImage($this->kycData->selfie);
+
         if($this->editState === true) {
              $this->user->kycdetail()->update([
                 'street'    => $this->kycData->street ?? null,
@@ -112,6 +120,8 @@ class DojahKycService
                 'house_number' => $this->kycData->house_number,
                 'bvn'       => $this->kycData->bvn,
                 'zip_code'  => $this->kycData->zip_code,
+                'nin'       => $this->kycData->nin,
+                'initial_image' => $initialLocalImage
             ]);
 
         }else {
@@ -123,6 +133,8 @@ class DojahKycService
                 'house_number' => $this->kycData->house_number,
                 'bvn'       => $this->kycData->bvn,
                 'zip_code'  => $this->kycData->zip_code,
+                'nin'       => $this->kycData->nin,
+                'initial_image' => $initialLocalImage
             ]);
 
         }
@@ -243,6 +255,18 @@ class DojahKycService
             return Storage::url($filename);
     }   
 
+    public function cookImage($initialSelfieImage) {
+        
+        $base64Truncated = $initialSelfieImage;
+        $base64 = "data:image/jpeg;base64," . $base64Truncated;
+        $selfieImage = $base64;
+        if (!str_starts_with($selfieImage, 'data:image/jpeg;base64,')) {
+            $selfieImage = "data:image/jpeg;base64," . $selfieImage;
+        }
+
+        $initialImage = $this->saveBase64Image($selfieImage, 'initialkycselfieimages');
+        return $initialImage;
+    }
 
     public function appTransport(string $method = 'post', ?string $params = null,  object $objectData = null)
     {

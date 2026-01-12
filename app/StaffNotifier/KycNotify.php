@@ -5,6 +5,7 @@ namespace App\StaffNotifier;
 use App\Mail\AdminNotify;
 use App\Models\StaffNotification;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class KycNotify
 {
@@ -20,6 +21,7 @@ class KycNotify
             'content'   => $content
         ]);
         foreach ($adminStaffs as $staff) {
+            Log::info(['email in kycNotify' => $staff]);
             Mail::to($staff)->send(new AdminNotify(direction: $direction, content: $content, fromUser: $fromUser));
         }
 

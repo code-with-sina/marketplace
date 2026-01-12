@@ -64,7 +64,7 @@ class AdminController extends Controller
             ->orderBy('id', 'DESC')
             ->with(['charge', 'owner', 'recipient'])
             ->latest()
-            ->paginate(60);
+            ->paginate(100);
 
 
         return response()->json($trades);
@@ -77,7 +77,7 @@ class AdminController extends Controller
         $ptop = PToP::where('created_at', '<',  now())
             ->orderBy('id', 'DESC')
             ->with(['ownerDetail', 'recipientDetail', 'trade.charge', 'trade']) // Load trade
-            ->paginate(60);
+            ->paginate(100);
 
         return response()->json($ptop);
     }
@@ -1361,5 +1361,115 @@ class AdminController extends Controller
     public function updateAuthorization() 
     {
         
+    }
+
+
+
+    public function createCounterPartyAccount(Request $request)
+    {
+
+        $validation = Validator::make($request->all(), [
+            'nipcode'       => ['required', 'string'],
+            'accountnumber' => ['required', 'string'],
+            'bank_id'       => ['required', 'string'],
+            'bank_name'     => ['required'],
+            'uuid'          => ['required']
+        ]);
+
+        if ($validation->fails()) {
+            return response()->json([
+                'status' => $validation->errors()
+            ]);
+        } else {
+            
+
+            $user = User::where('uuid', $request->uuid)->first();
+            $status = $this->verifyBankAccount($request->nipcode, $request->accountnumber, $request->uuid);
+            $loads = [
+                'data' => [
+                    'type'          => 'CounterParty',
+                    'attributes'    => [
+                        'verifyName'    => true,
+                        'bankCode'      => $request->nipcode,
+                        'accountName'   => $status['message'],
+                        'accountNumber' => $request->accountnumber
+                    ],
+                    'relationships' => [
+                        'bank'  => [
+                            'data'  => [
+                                'id'    =>  $request->bank_id,
+                                'type'  => 'Bank'
+                            ]
+                        ]
+                    ]
+                ]
+            ];
+
+            $payload = (object)$loads;
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'x-anchor-key'  => env('ANCHOR_KEY')
+            ])->post(env('ANCHOR_SANDBOX') . 'counterparties', $payload);
+
+            if ($response->status() == 201) {
+                $accounts = $response->object();
+                $user->customerstatus()->first()->customer()->first()->counterpartyaccount()->create([
+                    'counterPartyId'    => $accounts->data->id,
+                    'counterPartyType'  => $accounts->data->type,
+                    'bankId'            => $accounts->data->attributes->bank->id,
+                    'bankName'          => $accounts->data->attributes->bank->name,
+                    'bankNipCode'       => $accounts->data->attributes->bank->nipCode,
+                    'accountName'       => $accounts->data->attributes->accountName,
+                    'accountNumber'     => $accounts->data->attributes->accountNumber,
+                    'status'            => $accounts->data->attributes->status
+                ]);
+                return response()->json(['data' => $user->load(['customerstatus', 'customerstatus.customer.counterpartyaccount'])]);
+            } else {
+                return response()->json(['data' => $response->object()]);
+            }
+            
+            
+        }
+    }
+
+
+
+    public function verifyBankAccount($bankCode, $accountNumber, $uuid)
+    {
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
+            'x-anchor-key'  => env('ANCHOR_KEY')
+        ])->get(env('ANCHOR_SANDBOX') . 'payments/verify-account/' . $bankCode . '/' . $accountNumber);
+
+        if ($response->status() == 400) {
+            return ['status' => 400, 'message' => $response->object()->errors[0]->detail];
+        } else {
+            $data = $response->object();
+            $user = User::where('uuid', $uuid)->first();
+            $accounts = $user->customerstatus()->first()->customer()->first()->counterpartyaccount()->where('bankNipCode', $data->data->attributes->bank->nipCode)->where('accountNumber', $data->data->attributes->accountNumber)->first();
+            Log::info([$accounts]);
+            if ($accounts !== null) {
+                return ['status' => 400, 'message' => "Your account number already exist"];
+            } else {
+
+                return ['status' => 200, 'message' => $data->data->attributes->accountName];
+            }
+        }
+    }
+
+
+    public function allUsersForMailing()
+    {
+        $user = User::select([
+                'users.firstname',
+                'users.lastname',
+                'users.email'
+            ])
+            ->join('authorizations', 'authorizations.user_id', '=', 'users.id')
+            ->where('authorizations.priviledge', 'activated')
+            ->where('authorizations.email', 'verified')
+            ->orderBy('users.id', 'DESC')
+            ->get();
+        return response()->json($user);
     }
 }

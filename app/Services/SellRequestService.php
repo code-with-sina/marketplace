@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Jobs\TradeRequestNotificationJob;
 use App\Http\Controllers\MessengerController;
 use App\Jobs\AutoCancelTradeRequest;
+use App\Models\AdminAuth;
 
 use Illuminate\Support\Facades\Log;
 
@@ -156,11 +157,24 @@ class SellRequestService
             return $this;
         }
 
-        $staffing = Http::get('https://staffbased.ratefy.co/api/admin-staff');
-        $staffs = $staffing->object();
+        // $staffing = Http::get('https://staffbased.ratefy.co/api/admin-staff');
+        // $staffs = $staffing->object();
+
+        $adminsTable = AdminAuth::get();
         $groupStaff = [];
-        foreach ($staffs as $staff) {
+        $allowedEmails = [
+            'femiivictorr@gmail.com',
+            'gafaromolabakesoliat171@gmail.com',
+            'judithmbama6@gmail.com',
+        ];
+        foreach ($adminsTable as $staff) {
+             Log::info(['admin emails', $staff->email]);
+            if (!in_array($staff->email, $allowedEmails)) {
+                continue;
+            }
+            
             $groupStaff[] = $staff->email;
+            Log::info(['staff email', $staff->email]);
         }
         $content = $this->createContent($this->trade);
         $admin = app(AdminController::class);
