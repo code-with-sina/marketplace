@@ -18,6 +18,9 @@ use App\Services\PostBuyApprovalService;
 use App\Services\PostPeerPaymentService;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Sleep;
+use App\Services\SpecificTrxnNotifyService;
+
+
 
 class WebhookController extends Controller
 {
@@ -27,7 +30,8 @@ class WebhookController extends Controller
 
     public function handle(Request $request)
     {
-        
+        // Log::info(['overall data' => $request]);
+
         $this->eventData = $request->all();
         $homeSecret = config('app.webhook_secret');
         $getAnchorSignature = $request->header('x-anchor-signature');
@@ -67,7 +71,7 @@ class WebhookController extends Controller
 
 
         if ($request->data['type'] === 'nip.transfer.successful') {
-
+            Log::info(['NIP TRANSFER' => $request->data]);
             $withdrawal = WithdrawalJournal::where('reference', $request->included[1]['attributes']['reference'])->where('status', 'pending')->first();
             if ($withdrawal !== null) {
                 $withdrawal->update(['status' => 'success']);
@@ -88,7 +92,60 @@ class WebhookController extends Controller
         }
 
 
+        if ($request->data['type'] === 'payment.settled') {
+
+            $payload = json_decode($request->getContent(), true);
+            
+            $data = $payload['data'] ?? [];
+            $attributes = $data['attributes'] ?? [];
+            $payment = $attributes['payment'] ?? [];
+            Log::info(['data now' => $data]);
+            $eventId   = $data['id'] ?? null;
+            $eventType = $data['type'] ?? null;
+            $eventTime = $attributes['createdAt'] ?? null;
+            $paymentId        = $payment['paymentId'] ?? null;
+            $paymentType      = $payment['type'] ?? null;
+            $paymentReference = $payment['paymentReference'] ?? null;
+            $currency         = $payment['currency'] ?? null;
+            $amount           = $payment['amount'] ?? 0;
+            $fee              = $payment['fee'] ?? 0;
+            $status           = $eventType; 
+            $paymentCreatedAt = $payment['createdAt'] ?? null;
+            $paidAt           = $payment['paidAt'] ?? null;
+            $narration = $payment['narration'] ?? null;
+            $senderAccountNumber = $payment['counterParty']['accountNumber'] ?? null;
+            $senderAccountName   = $payment['counterParty']['accountName'] ?? null;
+            $senderBankName      = $payment['counterParty']['bank']['name'] ?? null;
+            $virtualAccountNumber = $payment['virtualNuban']['accountNumber'] ?? null;
+            $virtualAccountId     = $payment['virtualNuban']['accountId'] ?? null;
+            $virtualAccountName   = $payment['virtualNuban']['accountName'] ?? null;
+            $isDefaultVirtual     = $payment['virtualNuban']['default'] ?? false;
+            $settlementAccountId = $payment['settlementAccount']['accountId'] ?? null;
+            $isFrozen            = $payment['settlementAccount']['frozen'] ?? false;
+            $freezeReason        = $payment['settlementAccount']['freezeReason'] ?? null;
+
+
+            if($virtualAccountNumber == "6175043091") {
+                app(SpecificTrxnNotifyService::class)
+                ->process(
+                    $paymentReference,
+                    $eventTime,
+                    $amount,
+                    $narration,
+                    $currency,
+                    $paymentId,
+                    $senderAccountNumber,
+                    $senderAccountName,
+                    $senderBankName,
+                    $status,
+                );
+                Log::info(['email sent']);
+            }
+        }
+
+
         if ($request->data['type'] === 'nip.transfer.failed') {
+            Log::info(['NIP TRANSFER' => $request->data]);
             $withdrawal = WithdrawalJournal::where('reference', $request->included[1]['attributes']['reference'])->where('status', 'pending')->first();
             $withdrawal->update([
                 'status' => 'failed',

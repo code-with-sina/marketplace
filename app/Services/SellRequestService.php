@@ -168,13 +168,11 @@ class SellRequestService
             'judithmbama6@gmail.com',
         ];
         foreach ($adminsTable as $staff) {
-             Log::info(['admin emails', $staff->email]);
             if (!in_array($staff->email, $allowedEmails)) {
                 continue;
             }
             
             $groupStaff[] = $staff->email;
-            Log::info(['staff email', $staff->email]);
         }
         $content = $this->createContent($this->trade);
         $admin = app(AdminController::class);
