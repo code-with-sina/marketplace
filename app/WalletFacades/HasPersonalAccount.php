@@ -56,6 +56,8 @@ trait HasPersonalAccount
             objectData: null
         );
 
+        Log::info(['True Data for Personal Account' => $response->statusCode]);
+
         if ($response->statusCode === 200 || $response->statusCode === 202) {
             $accounts = $response->data;
             Log::info(['personal account' => $response->data]);
@@ -97,6 +99,7 @@ trait HasPersonalAccount
             objectData: null
         );
 
+        Log::info(['True Data for Personal Account Nuban' => $response->statusCode]);
         if ($response->statusCode === 200 || $response->statusCode === 202) {
             $nuban = $response->data;
             Log::info(['personal account' => $response->data]);

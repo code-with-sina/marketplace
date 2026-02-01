@@ -56,7 +56,7 @@ trait HasEscrowAccount
                 ->escrowId . "?include=DepositAccount%2CIndividualCustomer%2CBusinessCustomer",
             endpoint: 'accounts',
         );
-
+        Log::info(['True Data for Escrow Account' => $response->statusCode]);
         if ($response->statusCode === 200 || $response->statusCode === 202) {
             $accounts = $response->data;
             Log::info(['escrow account' => $response->data]);
@@ -96,7 +96,7 @@ trait HasEscrowAccount
             endpoint: "virtual-nubans"
 
         );
-
+        Log::info(['True Data for Escrow Account Nuban' => $response->statusCode]);
         if ($response->statusCode === 200 || $response->statusCode === 202) {
             $nuban = $response->data;
             Log::info(['escrow account' => $response->data]);

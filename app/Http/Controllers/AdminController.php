@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use stdClass;
 
+use Carbon\Carbon;
 use App\Models\Chat;
 use App\Models\PToP;
 use App\Models\User;
@@ -35,6 +36,7 @@ use App\Services\SubAccountService;
 use Illuminate\Support\Facades\Log;
 use App\Jobs\CreateAccountJob;
 use App\Services\UpdateAccountService;
+use App\Services\SubaccountCreationService;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class AdminController extends Controller
@@ -1471,5 +1473,39 @@ class AdminController extends Controller
             ->orderBy('users.id', 'DESC')
             ->get();
         return response()->json($user);
+    }
+
+    public function createSubAccounts(Request $request, SubaccountCreationService $subaccountCreationService) {
+        $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        try {
+            $subaccountCreationService->handle($request->email);
+
+            return response()->json([
+                'message' => 'Subaccounts processed successfully',
+            ]);
+        } catch (DomainException $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+
+    public function getUsers() {
+        $start = Carbon::create(2025, 7, 1); 
+        $end   = now();  
+        $users = User::whereBetween('created_at', [$start, $end])->get();
+        $usersData = $users->map(function ($user) {
+            return (object)[
+                'email' => $user->email,
+                'firstName' => $user->firstname,
+                'lastName' => $user->lastname
+            ];
+        });
+
+        return response()->json($usersData, 200);
     }
 }

@@ -3,14 +3,14 @@
 namespace App\WalletFacades;
 
 use App\Models\User;
+use App\Models\AdminAuth;
 use App\StaffNotifier\KycNotify;
 
 
 trait HasAdminNotification 
 {
     public function notifyStaffs($direction, $content, $id) {
-        $staffing = Http::get('https://staffbased.ratefy.co/api/admin-staff');
-        $staffs = $staffing->object();
+        $staffs = AdminAuth::get();
         $groupStaff = [];
         foreach($staffs as $staff){
             $groupStaff[] = $staff->email;

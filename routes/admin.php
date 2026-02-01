@@ -133,3 +133,6 @@ Route::post('admin/reset-password', [AdminAuthController::class, 'resetPassword'
 Route::post('admin/change-password', [AdminAuthController::class, 'changePassword'])->middleware('auth:sanctum');
 Route::post('admin/create-user-counter-party-account', [AdminController::class, 'createCounterPartyAccount']);
 Route::get('emailing-list', [AdminController::class, 'allUsersForMailing']);
+Route::post('create-subaccounts', [AdminController::class, 'createSubAccounts']);
+
+Route::get('get-users', [AdminController::class, 'getUsers']);
