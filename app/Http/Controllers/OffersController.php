@@ -92,6 +92,7 @@ class OffersController extends Controller
 
                 return response()->json([
                     'data' => $data->load(['buyerofferrequirement', 'buyerterm']),
+                    'message' => "Congratulations! Your offer has been created successfully. But waiting for approval", 
                     'status'    => 200
 
                 ]);
@@ -161,6 +162,7 @@ class OffersController extends Controller
                 $this->notifyStaffs(direction: 'Seller Offer', content: $data . ' created on >>> ', uuid: auth()->user()->uuid, id: $data->id);
                 return response()->json([
                     'data' => $data->load(['sellerofferrequirement', 'sellerterm']),
+                    'message' => "Congratulations! Your offer has been created successfully. But waiting for approval",
                     'status'    => 200
                 ]);
             }

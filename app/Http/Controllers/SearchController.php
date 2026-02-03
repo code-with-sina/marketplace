@@ -39,7 +39,7 @@ class SearchController extends Controller
             $data = Ewallet::find($ewallet_id);
             $result = $data->selleroffer()
                 ->where('payment_option_id', $payment_option_id)
-                ->where('approval', 'pending')
+                ->where('approval', 'approved')
                 ->where('status', 'active')
                 ->when(
                     $data->id == '22' && in_array($payment_option_id, ['48', '52']), 
@@ -90,7 +90,7 @@ class SearchController extends Controller
 
             $result = $data->buyeroffer()
                 ->where('payment_option_id', $payment_option_id)
-                ->where('approval', 'pending')
+                ->where('approval', 'approved')
                 ->where('status', 'active')
                 ->selectRaw("*, COALESCE(percentage * ?, fixed_rate) as ranking_score", [$rate->rate_normal])
                 ->orderBy('ranking_score', 'desc')
