@@ -264,7 +264,7 @@ class AdminController extends Controller
     public function getOfferNotification()
     {
 
-        $perPage = 10;
+        $perPage = 500;
         $page = request()->get('page', 1);
 
         $buy = BuyerOffer::where('approval', 'pending')
