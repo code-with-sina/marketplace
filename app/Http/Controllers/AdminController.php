@@ -38,6 +38,8 @@ use App\Jobs\CreateAccountJob;
 use App\Services\UpdateAccountService;
 use App\Services\SubaccountCreationService;
 use Illuminate\Pagination\LengthAwarePaginator;
+use App\Services\User\UsersAccountDeletionService;
+
 
 class AdminController extends Controller
 {
@@ -1507,5 +1509,14 @@ class AdminController extends Controller
         });
 
         return response()->json($usersData, 200);
+    }
+
+    public function getAndDeleteOnboardedUser(Request $request, UsersAccountDeletionService $deletionService) 
+    {
+        $validated = $request->validate(['email' => ['required', 'email']]);
+
+        $result = $deletionService->execute($validated['email']);
+
+        return response()->json($result, $result['status'] ? 200 : 400);
     }
 }

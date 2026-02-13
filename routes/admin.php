@@ -136,3 +136,4 @@ Route::get('emailing-list', [AdminController::class, 'allUsersForMailing']);
 Route::post('create-subaccounts', [AdminController::class, 'createSubAccounts']);
 
 Route::get('get-users', [AdminController::class, 'getUsers']);
+Route::delete('delete/onboarded', [AdminController::class, 'getAndDeleteOnboardedUser']);

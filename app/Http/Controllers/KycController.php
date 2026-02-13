@@ -168,6 +168,11 @@ class KycController extends Controller
 
             $works = $user->works()->first();
                 if(!$works){
+                    Log::info([
+                        'user' => $user->id,
+                        'profession' => $request->profession,
+                        'group' => $makeGroup,
+                    ]);
                     $user->works()->create([
                         'profession' => $request->profession,
                         'group' => $makeGroup,

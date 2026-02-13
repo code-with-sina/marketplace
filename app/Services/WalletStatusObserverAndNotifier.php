@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
-use App\Models\Admin;
+use App\Models\AdminAuth;
 use Illuminate\Support\Sleep;
 use App\Models\CustomerStatus;
 use App\Mail\WalletCreationState;
@@ -72,7 +72,7 @@ class WalletStatusObserverAndNotifier
     }
 
     public function fetchAdmin() {
-        return  Admin::where('role', 'administrator')->latest()->first() ?? null;
+        return  AdminAuth::where('role', 'admin')->latest()->first() ?? null;
     }
 
 
