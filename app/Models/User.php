@@ -56,10 +56,10 @@ class User extends Authenticatable implements MustVerifyEmail
      *
      * @var array<int, string>
      */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
+    // protected $hidden = [
+    //     'password',
+    //     'remember_token',
+    // ];
 
     /**
      * The attributes that should be cast.
@@ -191,13 +191,13 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(WhatsAppState::class);
     }
 
-    public function lastactivity(): HasOne 
+    public function lastactivity(): HasOne
     {
         return $this->hasOne(Activity::class)->latest();
     }
 
 
-    public function onboardinglog(): HasMany 
+    public function onboardinglog(): HasMany
     {
         return $this->hasMany(OnboardingLog::class);
     }

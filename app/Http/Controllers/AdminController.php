@@ -1337,17 +1337,19 @@ class AdminController extends Controller
     }
 
 
-    public function updateUsersfromExpress() {
+    public function updateUsersfromExpress()
+    {
         $json = file_get_contents(resource_path('data/users.json'));
         $users = json_decode($json, true);
         $this->insertUserData($users);
     }
 
-    public function insertUserData($usersJson) {
+    public function insertUserData($usersJson)
+    {
         foreach ($usersJson as $user) {
             $nameParts = explode(' ', trim($user['name']), 2);
 
-            User::updateOrCreate(['uuid' => $user['uuid']],[
+            User::updateOrCreate(['uuid' => $user['uuid']], [
                 'email' => $user['email'],
                 'firstname' => $nameParts[0] ?? null,
                 'lastname' => $nameParts[1] ?? null,
@@ -1362,10 +1364,7 @@ class AdminController extends Controller
     }
 
 
-    public function updateAuthorization() 
-    {
-        
-    }
+    public function updateAuthorization() {}
 
 
 
@@ -1385,7 +1384,7 @@ class AdminController extends Controller
                 'status' => $validation->errors()
             ]);
         } else {
-            
+
 
             $user = User::where('uuid', $request->uuid)->first();
             $status = $this->verifyBankAccount($request->nipcode, $request->accountnumber, $request->uuid);
@@ -1431,8 +1430,6 @@ class AdminController extends Controller
             } else {
                 return response()->json(['data' => $response->object()]);
             }
-            
-            
         }
     }
 
@@ -1465,10 +1462,10 @@ class AdminController extends Controller
     public function allUsersForMailing()
     {
         $user = User::select([
-                'users.firstname',
-                'users.lastname',
-                'users.email'
-            ])
+            'users.firstname',
+            'users.lastname',
+            'users.email'
+        ])
             ->join('authorizations', 'authorizations.user_id', '=', 'users.id')
             ->where('authorizations.priviledge', 'activated')
             ->where('authorizations.email', 'verified')
@@ -1477,7 +1474,8 @@ class AdminController extends Controller
         return response()->json($user);
     }
 
-    public function createSubAccounts(Request $request, SubaccountCreationService $subaccountCreationService) {
+    public function createSubAccounts(Request $request, SubaccountCreationService $subaccountCreationService)
+    {
         $request->validate([
             'email' => ['required', 'email'],
         ]);
@@ -1488,7 +1486,7 @@ class AdminController extends Controller
             return response()->json([
                 'message' => 'Subaccounts processed successfully',
             ]);
-        } catch (DomainException $e) {
+        } catch (\DomainException $e) {
             return response()->json([
                 'error' => $e->getMessage(),
             ], 422);
@@ -1496,9 +1494,10 @@ class AdminController extends Controller
     }
 
 
-    public function getUsers() {
-        $start = Carbon::create(2025, 7, 1); 
-        $end   = now();  
+    public function getUsers()
+    {
+        $start = Carbon::create(2025, 7, 1);
+        $end   = now();
         $users = User::whereBetween('created_at', [$start, $end])->get();
         $usersData = $users->map(function ($user) {
             return (object)[
@@ -1511,7 +1510,45 @@ class AdminController extends Controller
         return response()->json($usersData, 200);
     }
 
-    public function getAndDeleteOnboardedUser(Request $request, UsersAccountDeletionService $deletionService) 
+
+
+    public function getUsersTotal()
+    {
+        $start = Carbon::create(2026, 2, 14);
+        $end   = now();
+        $users = User::whereBetween('created_at', [$start, $end])->get();
+        // $usersData = $users->map(function ($user) {
+        //     return (object)[
+        //         'email' => $user->email,
+        //         'firstName' => $user->firstname,
+        //         'lastName' => $user->lastname
+        //     ];
+        // });
+
+        return response()->json($users->load(['kycdetail', 'customerstatus', 'customerstatus.customer', 'customerstatus.customer.escrowaccount', 'customerstatus.customer.personalaccount', 'customerstatus.customer.personalaccount.virtualnuban', 'customerstatus.customer.escrowaccount.virtualnuban']), 200);
+    }
+
+
+    public function getUsersByCount(Request $request)
+    {
+        $validated = $request->validate([
+            'number' => ['required', 'integer', 'min:1', 'max:10000'],
+        ]);
+
+        $users = User::latest()->limit((int) $validated['number'])->get();
+        $usersData = $users->map(function ($user) {
+            return (object)[
+                'email' => $user->email,
+                'firstName' => $user->firstname,
+                'lastName' => $user->lastname
+            ];
+        });
+
+        return response()->json($usersData, 200);
+    }
+
+
+    public function getAndDeleteOnboardedUser(Request $request, UsersAccountDeletionService $deletionService)
     {
         $validated = $request->validate(['email' => ['required', 'email']]);
 

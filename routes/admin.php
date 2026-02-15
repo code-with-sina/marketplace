@@ -137,3 +137,6 @@ Route::post('create-subaccounts', [AdminController::class, 'createSubAccounts'])
 
 Route::get('get-users', [AdminController::class, 'getUsers']);
 Route::delete('delete/onboarded', [AdminController::class, 'getAndDeleteOnboardedUser']);
+
+Route::get('get-users-total', [AdminController::class, 'getUsersTotal']);
+Route::post('get-users-by-count', [AdminController::class, 'getUsersByCount']);
